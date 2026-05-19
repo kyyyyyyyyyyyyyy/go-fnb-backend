@@ -1,0 +1,7 @@
+/target/
+
+.env
+*.log
+googleauth.txt
+
+/logs/
