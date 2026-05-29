@@ -19,8 +19,16 @@ pub fn init(cfg: &mut web::ServiceConfig) {
     );
 
     cfg.service(
-        web::scope("/api/qrcodes")
+        web::scope("/api/scan")
             // 🔓 public route
-            .route("/scan", web::post().to(qr_code_controller::scan_qr))
+            .route(
+                "/select-table" ,
+                web::post().to(qr_code_controller::select_table)
+            )
+
+            .route(
+                "/{slug}",
+                web::get().to(qr_code_controller::scan_qr)
+            )
     );
 }

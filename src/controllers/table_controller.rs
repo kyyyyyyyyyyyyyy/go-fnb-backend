@@ -115,3 +115,26 @@ pub async fn delete_table(
         }
     }
 }
+
+pub async fn delete_token(
+    pool: web::Data<PgPool>,
+    path: web::Path<Uuid>,
+) -> impl Responder {
+
+    let table_id = path.into_inner();
+
+    match TableService::delete_token(&pool, table_id).await {
+        Ok(()) => {
+            success("Table token deleted successfully", ())
+        }
+        Err(err) => {
+            error!(
+                message = "Failed To Delete Table Token",
+                error = ?err,
+                table_id = %table_id,
+            );
+
+            error_response("Failed to delete table token")
+        }
+    }
+}

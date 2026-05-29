@@ -5,7 +5,7 @@ use uuid::Uuid;
 pub struct CreateTableDTO {
     pub outlet_id: Uuid,
     pub name: String,
-    pub location: String,
+    pub location: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -20,6 +20,10 @@ pub struct TableResponseDTO {
     pub id: Uuid,
     pub outlet_id: Uuid,
     pub name: String,
-    pub location: String,
+    pub location: Option<String>,
     pub status: String,
+}
+
+pub struct TableDeleteTokenDTO {
+    pub table_id: Uuid,
 }

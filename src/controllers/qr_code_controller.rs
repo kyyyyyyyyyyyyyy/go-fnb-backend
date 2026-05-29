@@ -3,9 +3,9 @@ use sqlx::PgPool;
 use tracing::error;
 use uuid::Uuid;
 
+use crate::dto::qr_scan_dto::SelectTableDTO;
 use crate::services::qr_code_service::QrCodeService;
 use crate::dto::qr_code_dto::{CreateQrDTO, CreateQrWithTablesDTO};
-use crate::dto::qr_scan_dto::ScanQrDTO;
 use crate::utils::helper::{created, error_response, success, not_found};
 
 pub async fn create_qr_with_tables(
@@ -53,12 +53,12 @@ pub async fn create_qr(
 //
 pub async fn scan_qr(
     pool: web::Data<PgPool>,
-    payload: web::Json<ScanQrDTO>,
+    path: web::Path<String>,
 ) -> impl Responder {
 
-    let slug = &payload.slug;
+    let slug = path.into_inner();
 
-    match QrCodeService::scan(&pool, slug).await {
+    match QrCodeService::scan(&pool, &slug).await {
         Ok(Some(result)) => {
             success("QR found", result)
         }
@@ -73,6 +73,36 @@ pub async fn scan_qr(
             );
 
             error_response("Failed to scan QR")
+        }
+    }
+}
+
+pub async fn select_table(
+    pool: web::Data<PgPool>,
+    payload: web::Json<SelectTableDTO>,
+) -> impl Responder {
+
+    let dto = payload.into_inner();
+
+    match QrCodeService::select_table(
+        &pool,
+        dto.table_id,
+    )
+    .await
+    {
+        Ok(token) => {
+            success("Table selected", token)
+        }
+
+        Err(err) => {
+
+            error!(
+                error = ?err,
+                table_id = %dto.table_id,
+                "Failed To Select Table"
+            );
+
+            error_response("Failed to select table")
         }
     }
 }

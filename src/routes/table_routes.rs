@@ -13,7 +13,10 @@ pub fn init(cfg: &mut web::ServiceConfig) {
             
             // 🔥 CREATE
             .route("", web::post().to(table_controller::create_table))
-            
+
+            // 🔥 DELETE TOKEN
+            .route("/{id}/token", web::delete().to(table_controller::delete_token))
+
             // 🔥 GET ALL BY OUTLET
             .route("/outlet/{outlet_id}", web::get().to(table_controller::get_tables_by_outlet))
             

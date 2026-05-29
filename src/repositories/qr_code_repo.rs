@@ -60,7 +60,7 @@ impl QrCodeRepository {
     ) -> Result<Option<QrCode>, sqlx::Error> {
 
         let qr = sqlx::query_as::<_, QrCode>(
-            "SELECT * FROM qr_codes WHERE slug = $1 AND is_active = true"
+            "SELECT * FROM qr_codes WHERE slug = $1"
         )
         .bind(slug)
         .fetch_optional(pool)

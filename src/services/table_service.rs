@@ -88,7 +88,17 @@ impl TableService {
             status: table.status,
         })
     }
-    
+
+    pub async fn delete_token(
+        pool: &PgPool,
+        table_id: Uuid,
+    ) -> Result<(), sqlx::Error> {
+
+        TableRepository::delete_token(pool, table_id).await?;
+
+        Ok(())
+    }
+
     pub async fn delete(
         pool: &PgPool,
         table_id: Uuid,

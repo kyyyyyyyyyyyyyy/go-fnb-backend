@@ -10,7 +10,7 @@ impl TableRepository {
         pool: &PgPool,
         outlet_id: Uuid,
         name: String,
-        location: String,
+        location: Option<String>,
     ) -> Result<Table, sqlx::Error> {
 
         let table = sqlx::query_as::<_, Table>(
@@ -46,6 +46,23 @@ impl TableRepository {
         Ok(table)
     }
 
+    pub async fn find_by_id(
+        pool: &PgPool,
+        table_id: Uuid,
+    ) -> Result<Option<Table>, sqlx::Error> {
+
+        let table = sqlx::query_as::<_, Table>(
+            r#"
+            SELECT * FROM tables WHERE id = $1
+            "#
+        )
+        .bind(table_id)
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(table)
+    }
+
     pub async fn get_by_outlet_id(
         pool: &PgPool,
         outlet_id: Uuid,
@@ -61,6 +78,53 @@ impl TableRepository {
         .await?;
 
         Ok(tables)
+    }
+
+    pub async fn get_available_tables_by_qr(
+        pool: &PgPool,
+        qr_id: Uuid,
+    ) -> Result<Vec<Table>, sqlx::Error> {
+
+        let tables = sqlx::query_as::<_, Table>(
+            r#"
+            SELECT
+                t.*
+            FROM
+                tables t
+                JOIN qr_code_tables qct
+                    ON qct.table_id = t.id
+            WHERE
+                qct.qr_id = $1
+                AND t.token IS NULL
+            "#
+        )
+        .bind(qr_id)
+        .fetch_all(pool)
+        .await?;
+
+        Ok(tables)
+    }
+
+    pub async fn set_table_token(
+        pool: &PgPool,
+        table_id: Uuid,
+        token: &str,
+    ) -> Result<(), sqlx::Error> {
+
+        sqlx::query(
+            r#"
+            UPDATE tables
+            SET token = $1,
+                status = 'occupied'
+            WHERE id = $2
+            "#
+        )
+        .bind(token)
+        .bind(table_id)
+        .execute(pool)
+        .await?;
+
+        Ok(())
     }
 
     pub async fn update(
@@ -110,6 +174,26 @@ impl TableRepository {
         .await?;
 
         Ok(result)
+    }
+
+    pub async fn delete_token(
+        pool: &PgPool,
+        table_id: Uuid,
+    ) -> Result<(), sqlx::Error> {
+
+        sqlx::query(
+            r#"
+            UPDATE tables
+            SET token = NULL,
+                status = 'available'
+            WHERE id = $1
+            "#
+        )
+        .bind(table_id)
+        .execute(pool)
+        .await?;
+
+        Ok(())
     }
 
 }

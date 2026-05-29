@@ -4,7 +4,7 @@ use rand::{distributions::Alphanumeric, Rng};
 
 use crate::repositories::qr_code_repo::QrCodeRepository;
 use crate::dto::qr_code_dto::{CreateQrDTO, CreateQrWithTablesDTO, QrResponseDTO};
-use crate::dto::qr_scan_dto::{ScanQrResponseDTO, TableDTO};
+use crate::dto::qr_scan_dto::{AvailableTableDTO, ScanQrResponseDTO, TableDTO};
 use crate::repositories::table_repo::TableRepository;
 
 pub struct QrCodeService;
@@ -48,30 +48,146 @@ impl QrCodeService {
     }
 
     // 🔍 SCAN QR (core logic kamu nanti di sini)
+    // pub async fn scan(
+    //     pool: &PgPool,
+    //     slug: &str,
+    // ) -> Result<Option<ScanQrResponseDTO>, sqlx::Error> {
+
+    //     // cari QR berdasarkan slug
+    //     let qr = match QrCodeRepository::find_by_slug(pool, slug).await? {
+    //         Some(q) => q,
+    //         None => return Ok(None),
+    //     };
+
+    //     // ambil tables dari pivot
+    //     let tables = QrCodeRepository::get_tables_by_qr(pool, qr.id).await?;
+
+    //     // mapping ke DTO
+    //     let table_dtos: Vec<TableDTO> = tables.into_iter().map(|t| TableDTO {
+    //         id: t.id,
+    //         name: t.name,
+    //     }).collect();
+
+    //     Ok(Some(ScanQrResponseDTO {
+    //         qr_id: qr.id,
+    //         tables: table_dtos,
+    //     }))
+    // }
+
+
     pub async fn scan(
         pool: &PgPool,
         slug: &str,
     ) -> Result<Option<ScanQrResponseDTO>, sqlx::Error> {
 
-        // cari QR berdasarkan slug
         let qr = match QrCodeRepository::find_by_slug(pool, slug).await? {
             Some(q) => q,
             None => return Ok(None),
         };
 
-        // ambil tables dari pivot
-        let tables = QrCodeRepository::get_tables_by_qr(pool, qr.id).await?;
+        let tables =
+            TableRepository::get_available_tables_by_qr(pool, qr.id).await?;
 
-        // mapping ke DTO
-        let table_dtos: Vec<TableDTO> = tables.into_iter().map(|t| TableDTO {
-            id: t.id,
-            name: t.name,
-        }).collect();
+        // tidak ada meja tersedia
+        if tables.is_empty() {
+            return Ok(None);
+        }
+
+        // =========================================
+        // SINGLE TABLE
+        // =========================================
+        if tables.len() == 1 {
+
+            let table = &tables[0];
+
+            let token: String = rand::thread_rng()
+                .sample_iter(&Alphanumeric)
+                .take(32)
+                .map(char::from)
+                .collect();
+
+            TableRepository::set_table_token(
+                pool,
+                table.id,
+                &token,
+            )
+            .await?;
+
+            return Ok(Some(ScanQrResponseDTO {
+                qr_id: qr.id,
+                qr_type: "single".to_string(),
+
+                token: Some(token),
+
+                table: Some(AvailableTableDTO {
+                    id: table.id,
+                    name: table.name.clone(),
+                }),
+
+                tables: None,
+            }));
+        }
+
+        // =========================================
+        // MULTI TABLE
+        // =========================================
+
+        let table_dtos = tables
+            .into_iter()
+            .map(|t| AvailableTableDTO {
+                id: t.id,
+                name: t.name,
+            })
+            .collect();
 
         Ok(Some(ScanQrResponseDTO {
             qr_id: qr.id,
-            tables: table_dtos,
+            qr_type: "multi".to_string(),
+
+            token: None,
+
+            table: None,
+
+            tables: Some(table_dtos),
         }))
+    }
+
+    pub async fn select_table(
+        pool: &PgPool,
+        table_id: Uuid,
+    ) -> Result<String, sqlx::Error> {
+
+        let table =
+            TableRepository::find_by_id(pool, table_id).await?;
+
+        let table = match table {
+            Some(t) => t,
+            None => {
+                return Err(sqlx::Error::RowNotFound);
+            }
+        };
+
+        // cek status meja
+        if table.status != "available" {
+            return Err(sqlx::Error::RowNotFound);
+        }
+
+        // generate token
+        let token: String = rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(32)
+            .map(char::from)
+            .collect();
+
+        // update token + status
+        TableRepository::set_table_token(
+            pool,
+            table_id,
+            &token,
+        )
+        .await?;
+
+        Ok(token)
     }
 
     pub async fn create_with_tables(
@@ -94,7 +210,7 @@ impl QrCodeService {
                 pool,
                 dto.outlet_id,
                 table_item.name,
-                table_item.location,
+                Some(table_item.location),
             ).await?;
 
             table_ids.push(table.id);

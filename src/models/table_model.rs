@@ -7,6 +7,10 @@ pub struct Table {
     pub id: Uuid,
     pub outlet_id: Uuid,
     pub name: String,
-    pub location: String,
+
+    pub token: Option<String>,
+
+    pub location: Option<String>,
+
     pub status: String,
 }
