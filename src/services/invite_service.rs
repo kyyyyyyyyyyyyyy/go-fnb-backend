@@ -5,6 +5,7 @@ use sqlx::PgPool;
 use crate::models::invite_model::{CreateResult, Invite};
 use crate::repositories::invite_repo::InviteRepository;
 use crate::repositories::outlet_repo::OutletRepository;
+use crate::utils::hash;
 
 pub struct InviteService;
 
@@ -72,13 +73,17 @@ impl InviteService {
     pub async fn use_invite(
         pool: &PgPool,
         token: &str,
+        name: &str,
+        email: &str,
+        password: &str,
     ) -> Result<(), String> {
 
         // validasi dulu
         let _ = Self::validate_invite(pool, token).await?;
 
+        let hashed_password = hash::hash_password(password);
         // mark as used
-        InviteRepository::mark_as_used(pool, token)
+        InviteRepository::used(pool, token, name, email, &hashed_password)
             .await
             .map_err(|e| e.to_string())?;
 

@@ -12,7 +12,7 @@ pub fn init(cfg: &mut web::ServiceConfig) {
 
             // 🔥 PUBLIC ROUTES (tidak perlu login)
             .route("/validate/{token}", web::get().to(invite_controller::validate_invite))
-            .route("/use/{token}", web::post().to(invite_controller::use_invite))
+            .route("/use", web::post().to(invite_controller::use_invite))
 
             // 🔐 PROTECTED ROUTES (butuh auth)
             .service(

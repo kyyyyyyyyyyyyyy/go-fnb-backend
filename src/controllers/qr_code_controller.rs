@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::dto::qr_scan_dto::SelectTableDTO;
 use crate::services::qr_code_service::QrCodeService;
 use crate::dto::qr_code_dto::{CreateQrDTO, CreateQrWithTablesDTO};
-use crate::utils::helper::{created, error_response, success, not_found};
+use crate::utils::helper;
 
 pub async fn create_qr_with_tables(
     pool: web::Data<PgPool>,
@@ -34,7 +34,7 @@ pub async fn create_qr(
 
     match QrCodeService::create(&pool, &dto).await {
         Ok(result) => {
-            created("qr created successfully", result)
+            helper::successWithDatas("qr created successfully", result)
         }
         Err(err) => {
             error!(
@@ -43,7 +43,7 @@ pub async fn create_qr(
                 payload = ?dto,
             );
             
-            error_response("Failed to create QR")
+            helper::error_response("Failed to create QR")
         }
     }
 }
@@ -60,10 +60,10 @@ pub async fn scan_qr(
 
     match QrCodeService::scan(&pool, &slug).await {
         Ok(Some(result)) => {
-            success("QR found", result)
+            helper::successWithDatas("QR found", result)
         }
         Ok(None) => {
-            not_found("QR not found or inactive")
+            helper::not_found("QR not found or inactive")
         }
         Err(err) => {
             error!(
@@ -72,7 +72,7 @@ pub async fn scan_qr(
                 slug = %slug,
             );
 
-            error_response("Failed to scan QR")
+            helper::error_response("Failed to scan QR")
         }
     }
 }
@@ -91,7 +91,7 @@ pub async fn select_table(
     .await
     {
         Ok(token) => {
-            success("Table selected", token)
+            helper::successWithDatas("Table selected", token)
         }
 
         Err(err) => {
@@ -102,7 +102,7 @@ pub async fn select_table(
                 "Failed To Select Table"
             );
 
-            error_response("Failed to select table")
+            helper::error_response("Failed to select table")
         }
     }
 }
@@ -117,7 +117,7 @@ pub async fn get_qr_tables(
 
     match QrCodeService::get_tables(&pool, qr_id).await {
         Ok(result) => {
-            success("Tables fetched successfully", result)
+            helper::successWithDatas("Tables fetched successfully", result)
         }
         Err(err) => {
             error!(
@@ -126,7 +126,7 @@ pub async fn get_qr_tables(
                 qr_id = %qr_id,
             );
 
-            error_response("Failed to get tables")
+            helper::error_response("Failed to get tables")
         }
     }
 }
@@ -142,7 +142,7 @@ pub async fn get_qr_by_outlet(
 
     match QrCodeService::get_by_outlet(&pool, outlet_id).await {
         Ok(result) => {
-            success("QRs fetched successfully", result)
+            helper::successWithDatas("QRs fetched successfully", result)
         }
         Err(err) => {
             error!(
@@ -151,7 +151,7 @@ pub async fn get_qr_by_outlet(
                 outlet_id = %outlet_id,
             );
 
-            error_response("Failed to get QR")
+            helper::error_response("Failed to get QR")
         }
     }
 }
@@ -167,10 +167,10 @@ pub async fn regenerate_qr_slug(
 
     match QrCodeService::regenerate_slug(&pool, qr_id).await {
         Ok(result) => {
-            success("QR slug regenerated successfully", result)
+            helper::successWithDatas("QR slug regenerated successfully", result)
         }
         Err(sqlx::Error::RowNotFound) => {
-            not_found("QR not found")
+            helper::not_found("QR not found")
         }
         Err(err) => {
             error!(
@@ -179,7 +179,7 @@ pub async fn regenerate_qr_slug(
                 qr_id = %qr_id,
             );
 
-            error_response("Failed to regenerate slug")
+            helper::error_response("Failed to regenerate slug")
         }
     }
 }

@@ -9,6 +9,7 @@ pub struct CreateInviteDTO {
 #[derive(Deserialize)]
 pub struct AcceptInviteDTO {
     pub token: String,
+    pub name: String,
     pub email: String,
     pub password: String,
 }

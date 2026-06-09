@@ -11,7 +11,14 @@ pub fn get_user_id(req: &HttpRequest) -> Result<Uuid, AppError> {
         .ok_or(AppError::Unauthorized)
 }
 
-pub fn created<T: serde::Serialize>(message: &str, data: T) -> HttpResponse {
+pub fn created(message: &str) -> HttpResponse {
+    HttpResponse::Created().json(serde_json::json!({
+        "success": true,
+        "message": message,
+    }))
+}
+
+pub fn createdWithDatas<T: serde::Serialize>(message: &str, data: T) -> HttpResponse {
     HttpResponse::Created().json(serde_json::json!({
         "success": true,
         "message": message,
@@ -19,11 +26,18 @@ pub fn created<T: serde::Serialize>(message: &str, data: T) -> HttpResponse {
     }))
 }
 
-pub fn success<T: serde::Serialize>(message: &str, data: T) -> HttpResponse {
+pub fn successWithDatas<T: serde::Serialize>(message: &str, data: T) -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
         "success": true,
         "message": message,
         "data": data
+    }))
+}
+
+pub fn success(message: &str) -> HttpResponse {
+    HttpResponse::Ok().json(serde_json::json!({
+        "success": true,
+        "message": message,
     }))
 }
 

@@ -76,11 +76,78 @@ impl InviteRepository {
     }
 
     // ✅ MARK AS USED
-    pub async fn mark_as_used(
+    pub async fn used(
         pool: &PgPool,
         token: &str,
+        name: &str,
+        email: &str,
+        password: &str,
     ) -> Result<(), sqlx::Error> {
+        let mut tx = pool.begin().await?;
 
+        // Ambil data invite
+        let invite = sqlx::query!(
+            r#"
+            SELECT outlet_id, role
+            FROM invites
+            WHERE token = $1
+            AND used = false
+            "#,
+            token
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        // Generate user id
+        let user_id = Uuid::new_v4();
+
+        // Hash password
+        // Insert user
+        sqlx::query!(
+            r#"
+            INSERT INTO users (
+                id,
+                name,
+                email,
+                password
+            )
+            VALUES (
+                $1,
+                $2,
+                $3,
+                $4
+            )
+            "#,
+            user_id,
+            name,
+            email,
+            password
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        // Insert user_outlets
+        sqlx::query!(
+            r#"
+            INSERT INTO user_outlets (
+                user_id,
+                outlet_id,
+                role
+            )
+            VALUES (
+                $1,
+                $2,
+                $3
+            )
+            "#,
+            user_id,
+            invite.outlet_id,
+            invite.role
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        // Tandai invite sudah dipakai
         sqlx::query!(
             r#"
             UPDATE invites
@@ -89,8 +156,10 @@ impl InviteRepository {
             "#,
             token
         )
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
+
+        tx.commit().await?;
 
         Ok(())
     }

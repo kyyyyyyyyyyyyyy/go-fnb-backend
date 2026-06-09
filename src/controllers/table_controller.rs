@@ -5,7 +5,7 @@ use tracing::error;
 
 use crate::services::table_service::TableService;
 use crate::dto::table_dto::{CreateTableDTO, UpdateTableDTO};
-use crate::utils::helper::{error_response, success, not_found};
+use crate::utils::helper::{error_response, not_found, success, successWithDatas};
 
 pub async fn create_table(
     pool: web::Data<PgPool>,
@@ -13,7 +13,7 @@ pub async fn create_table(
 ) -> impl Responder {
 
     match TableService::create(&pool, payload.into_inner()).await {
-        Ok(result) => success("Table created successfully", result),
+        Ok(result) => successWithDatas("Table created successfully", result),
         Err(err) => error_response(&err.to_string()),
     }
 }
@@ -27,7 +27,7 @@ pub async fn get_table_by_id(
 
     match TableService::get_by_id(&pool, table_id).await {
         Ok(result) => {
-            success("Table fetched successfully", result)
+            successWithDatas("Table fetched successfully", result)
         }
         Err(err) => {
             error!(
@@ -50,7 +50,7 @@ pub async fn get_tables_by_outlet(
 
     match TableService::get_by_outlet_id(&pool, outlet_id).await {
         Ok(result) => {
-            success("Tables fetched successfully", result)
+            successWithDatas("Tables fetched successfully", result)
         }
         Err(err) => {
             error!(
@@ -75,7 +75,7 @@ pub async fn update_table(
 
     match TableService::update(&pool, table_id, dto).await {
         Ok(result) => {
-            success("Table updated successfully", result)
+            successWithDatas("Table updated successfully", result)
         }
         Err(err) => {
             error!(
@@ -99,7 +99,7 @@ pub async fn delete_table(
 
     match TableService::delete(&pool, table_id).await {
         Ok(true) => {
-            success("Table deleted successfully", ())
+            success("Table deleted successfully")
         }
         Ok(false) => {
             not_found("Table not found")
@@ -125,7 +125,7 @@ pub async fn delete_token(
 
     match TableService::delete_token(&pool, table_id).await {
         Ok(()) => {
-            success("Table token deleted successfully", ())
+            success("Table token deleted successfully")
         }
         Err(err) => {
             error!(

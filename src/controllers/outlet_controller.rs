@@ -1,9 +1,10 @@
-use actix_web::{HttpRequest, Responder, web, HttpResponse};
+use actix_web::{HttpRequest, Responder, web};
 use uuid::Uuid;
 use sqlx::PgPool;
 
 use crate::services::outlet_service::OutletService;
 use crate::dto::outlet_dto::{CreateOutletDTO, UpdateOutletDTO};
+use crate::utils;
 use crate::utils::helper::get_user_id;
 use crate::utils::app_error::AppError;
 
@@ -18,7 +19,7 @@ pub async fn create_outlet(
 
     let user_id = get_user_id(&http_req)?;
 
-    let id = OutletService::create_outlet(
+    let _ = OutletService::create_outlet(
         &pool,
         user_id,
         req.name.clone(),
@@ -31,10 +32,7 @@ pub async fn create_outlet(
     )
     .await?;
 
-    Ok(HttpResponse::Ok().json(serde_json::json!({
-        "success": true,
-        "data": { "id": id }
-    })))
+    Ok(utils::helper::created("Outlet created successfully"))
 }
 
 //
@@ -46,10 +44,7 @@ pub async fn get_all_outlets(
 
     let data = OutletService::get_all_outlets(&pool).await?;
 
-    Ok(HttpResponse::Ok().json(serde_json::json!({
-        "success": true,
-        "data": data
-    })))
+    Ok(utils::helper::successWithDatas("Outlets fetched successfully", data))
 }
 
 //
@@ -62,10 +57,7 @@ pub async fn get_outlet_by_id(
 
     let data = OutletService::get_outlet_by_id(&pool, path.into_inner()).await?;
 
-    Ok(HttpResponse::Ok().json(serde_json::json!({
-        "success": true,
-        "data": data
-    })))
+    Ok(utils::helper::successWithDatas("Outlet fetched successfully", data))
 }
 
 //
@@ -76,14 +68,11 @@ pub async fn get_my_outlets(
     http_req: HttpRequest,
 ) -> Result<impl Responder, AppError> {
 
-    let user_id = get_user_id(&http_req)?;
+    let user_id = utils::helper::get_user_id(&http_req)?;
 
     let data = OutletService::get_my_outlets(&pool, user_id).await?;
 
-    Ok(HttpResponse::Ok().json(serde_json::json!({
-        "success": true,
-        "data": data
-    })))
+    Ok(utils::helper::successWithDatas("My outlets fetched successfully", data))
 }
 
 //
@@ -106,10 +95,7 @@ pub async fn update_outlet(
     )
     .await?;
 
-    Ok(HttpResponse::Ok().json(serde_json::json!({
-        "success": true,
-        "message": "Outlet updated"
-    })))
+    Ok(utils::helper::success("Outlet updated"))
 }
 
 //
@@ -130,8 +116,5 @@ pub async fn delete_outlet(
     )
     .await?;
 
-    Ok(HttpResponse::Ok().json(serde_json::json!({
-        "success": true,
-        "message": "Outlet deleted"
-    })))
+    Ok(utils::helper::success("Outlet deleted"))
 }

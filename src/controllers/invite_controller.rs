@@ -1,11 +1,11 @@
 use std::env;
 
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, Responder};
 use serde_json::json;
 use uuid::Uuid;
 use sqlx::PgPool;
 
-use crate::{dto::invite_dto::CreateInviteDTO, services::invite_service::InviteService};
+use crate::{dto::invite_dto::{AcceptInviteDTO, CreateInviteDTO}, services::invite_service::InviteService, utils::helper};
 
 
 //
@@ -26,17 +26,24 @@ pub async fn create_invite(
     .await;
 
     match result {
-        Ok(invite) => HttpResponse::Ok().json(json!({
-            "success": true,
-            "url": format!(
-                    "http://localhost:{}/api/invite/use/{}",
-                    port,
-                    invite.token
-                )
-    })),
-        Err(err) => HttpResponse::BadRequest().json(serde_json::json!({
-            "error": err
-        })),
+        Ok(invite) => {
+            helper::createdWithDatas(
+                "Invite created successfully",
+                json!({
+                    "url": format!(
+                        "http://localhost:{}/api/invites/validate/{}",
+                        port,
+                        invite.token
+                    )
+                }),
+            )
+        }
+
+        Err(err) => {
+            helper::error_response(
+                &err.to_string()
+            )
+        }
     }
 }
 
@@ -53,10 +60,8 @@ pub async fn validate_invite(
     let result = InviteService::validate_invite(&pool, &token).await;
 
     match result {
-        Ok(invite) => HttpResponse::Ok().json(invite),
-        Err(err) => HttpResponse::BadRequest().json(serde_json::json!({
-            "error": err
-        })),
+        Ok(invite) => helper::successWithDatas("Invite valid", invite),
+        Err(err) => helper::error_response(&err.to_string()),
     }
 }
 
@@ -65,20 +70,13 @@ pub async fn validate_invite(
 //
 pub async fn use_invite(
     pool: web::Data<PgPool>,
-    path: web::Path<String>,
+    body: web::Json<AcceptInviteDTO>,
 ) -> impl Responder {
-
-    let token = path.into_inner();
-
-    let result = InviteService::use_invite(&pool, &token).await;
+    let result = InviteService::use_invite(&pool, &body.token, &body.name, &body.email, &body.password).await;
 
     match result {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "message": "Invite successfully used"
-        })),
-        Err(err) => HttpResponse::BadRequest().json(serde_json::json!({
-            "error": err
-        })),
+        Ok(_) => helper::created("User berhasil dibuat"),
+        Err(err) => helper::error_response(&err.to_string()),
     }
 }
 
@@ -95,11 +93,7 @@ pub async fn delete_invite(
     let result = InviteService::delete_invite(&pool, id).await;
 
     match result {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "message": "Invite deleted"
-        })),
-        Err(err) => HttpResponse::BadRequest().json(serde_json::json!({
-            "error": err
-        })),
+        Ok(_) => helper::success("Invite deleted"),
+        Err(err) => helper::error_response(&err.to_string()),
     }
 }

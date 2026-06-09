@@ -128,40 +128,85 @@ impl TableRepository {
     }
 
     pub async fn update(
-        pool: &PgPool,
-        table_id: Uuid,
-        name: Option<String>,
-        location: Option<String>,
-        status: Option<String>,
-    ) -> Result<Table, sqlx::Error> {
+    pool: &PgPool,
+    table_id: Uuid,
+    name: Option<String>,
+    location: Option<String>,
+    status: Option<String>,
+) -> Result<Table, sqlx::Error> {
 
-        let mut qb = QueryBuilder::new("UPDATE tables SET ");
-
-        let mut separated = qb.separated(", ");
-
-        if let Some(name) = name {
-            separated.push("name = ").push_bind(name);
-        }
-
-        if let Some(location) = location {
-            separated.push("location = ").push_bind(location);
-        }
-
-        if let Some(status) = status {
-            separated.push("status = ").push_bind(status);
-        }
-
-        qb.push(" WHERE id = ").push_bind(table_id);
-        qb.push(" RETURNING *");
-
-        let query = qb.build_query_as::<Table>();
-
-        let table = query.fetch_one(pool).await?;
-
-        Ok(table)
+    // Minimal ada 1 field yang diupdate
+    if name.is_none()
+        && location.is_none()
+        && status.is_none()
+    {
+        return Err(
+            sqlx::Error::Protocol(
+                "No fields to update".into()
+            )
+        );
     }
 
-    pub async fn delete(
+    let mut qb =
+        QueryBuilder::<sqlx::Postgres>::new(
+            "UPDATE tables SET "
+        );
+
+    let mut has_previous = false;
+
+    // Update name
+    if let Some(name) = name {
+
+        if has_previous {
+            qb.push(", ");
+        }
+
+        qb.push("name = ");
+        qb.push_bind(name);
+
+        has_previous = true;
+    }
+
+    // Update location
+    if let Some(location) = location {
+
+        if has_previous {
+            qb.push(", ");
+        }
+
+        qb.push("location = ");
+        qb.push_bind(location);
+
+        has_previous = true;
+    }
+
+    // Update status
+    if let Some(status) = status {
+
+        if has_previous {
+            qb.push(", ");
+        }
+
+        qb.push("status = ");
+        qb.push_bind(status);
+    }
+
+    qb.push(" WHERE id = ");
+    qb.push_bind(table_id);
+
+    qb.push(" RETURNING *");
+
+    // Debug query
+    println!("{}", qb.sql());
+
+    let table = qb
+        .build_query_as::<Table>()
+        .fetch_one(pool)
+        .await?;
+
+    Ok(table)
+}
+pub async fn delete(
         pool: &PgPool,
         table_id: Uuid,
     ) -> Result<sqlx::postgres::PgQueryResult, sqlx::Error> {
