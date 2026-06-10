@@ -5,6 +5,7 @@ pub mod auth_routes;
 pub mod outlet_routes;
 pub mod qr_code_routes;
 pub mod table_routes;
+pub mod category_routes;
 pub mod invite_routes;
 
 pub fn init(cfg: &mut web::ServiceConfig) {
@@ -13,5 +14,7 @@ pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.configure(outlet_routes::init);
     cfg.configure(qr_code_routes::init);
     cfg.configure(table_routes::init);
+    cfg.configure(category_routes::init);
     cfg.configure(invite_routes::init);
+    
 }

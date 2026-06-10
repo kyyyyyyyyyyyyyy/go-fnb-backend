@@ -1,4 +1,5 @@
 use actix_web::{HttpMessage, HttpRequest, HttpResponse};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::middlewares::auth_middleware::AuthUser;
@@ -9,6 +10,44 @@ pub fn get_user_id(req: &HttpRequest) -> Result<Uuid, AppError> {
         .get::<AuthUser>()
         .map(|u| u.user_id)
         .ok_or(AppError::Unauthorized)
+}
+
+pub async fn ensure_user_has_outlet(
+    req: &HttpRequest,
+    pool: &PgPool,
+    outlet_id: Uuid,
+) -> Result<Uuid, AppError> {
+
+    let user_id = req
+        .extensions()
+        .get::<AuthUser>()
+        .map(|u| u.user_id)
+        .ok_or(AppError::Unauthorized)?;
+
+    let exists: bool =
+        sqlx::query_scalar(
+            r#"
+            SELECT EXISTS(
+                SELECT 1
+                FROM user_outlets
+                WHERE user_id = $1
+                AND outlet_id = $2
+            )
+            "#
+        )
+        .bind(user_id)
+        .bind(outlet_id)
+        .fetch_one(pool)
+        .await
+        .map_err(
+            |_| AppError::InternalServerError
+        )?;
+
+    if !exists {
+        return Err(AppError::Unauthorized);
+    }
+
+    Ok(user_id)
 }
 
 pub fn created(message: &str) -> HttpResponse {

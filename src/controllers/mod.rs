@@ -3,3 +3,4 @@ pub mod outlet_controller;
 pub mod qr_code_controller;
 pub mod table_controller;
 pub mod invite_controller;
+pub mod category_controller;

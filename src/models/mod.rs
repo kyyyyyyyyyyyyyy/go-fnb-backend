@@ -6,3 +6,4 @@ pub mod qr_code_model;
 pub mod table_model;
 pub mod qr_code_table_model;
 pub mod invite_model;
+pub mod category_model;
