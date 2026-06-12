@@ -4,3 +4,4 @@ pub mod qr_code_service;
 pub mod table_service;
 pub mod invite_service;
 pub mod category_service;
+pub mod product_service;
