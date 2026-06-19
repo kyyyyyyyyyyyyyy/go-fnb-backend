@@ -5,3 +5,4 @@ pub mod table_controller;
 pub mod invite_controller;
 pub mod category_controller;
 pub mod product_controller;
+pub mod order_controller;

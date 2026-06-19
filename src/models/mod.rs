@@ -9,3 +9,4 @@ pub mod invite_model;
 pub mod category_model;
 pub mod product_model;
 pub mod product_category_model;
+pub mod order_model;
