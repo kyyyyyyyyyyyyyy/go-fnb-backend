@@ -1,4 +1,5 @@
 use sqlx::PgPool;
+use sqlx::Row;
 use uuid::Uuid;
 use crate::models::invite_model::{CreateResult, Invite};
 
@@ -6,7 +7,7 @@ pub struct InviteRepository;
 
 impl InviteRepository {
 
-    // 🔥 CREATE INVITE
+    // CREATE INVITE
     pub async fn create(
         pool: &PgPool,
         outlet_id: Uuid,
@@ -14,39 +15,30 @@ impl InviteRepository {
         token: &str,
     ) -> Result<CreateResult, sqlx::Error> {
 
-        let record = sqlx::query!(
+        let token: String = sqlx::query_scalar(
             r#"
             INSERT INTO invites (id, outlet_id, role, token, expired_at)
             VALUES ($1, $2, $3, $4, NOW() + INTERVAL '1 day')
-            RETURNING
-            id,
-            outlet_id,
-            role,
-            token,
-            expired_at,
-            used,
-            created_at as "created_at!"
-            "#,
-            Uuid::new_v4(),
-            outlet_id,
-            role,
-            token
+            RETURNING token
+            "#
         )
+        .bind(Uuid::new_v4())
+        .bind(outlet_id)
+        .bind(role)
+        .bind(token)
         .fetch_one(pool)
         .await?;
 
-        Ok(CreateResult {
-            token: record.token,
-        })
+        Ok(CreateResult { token })
     }
 
-    // 🔍 FIND BY TOKEN
+    // FIND BY TOKEN
     pub async fn find_by_token(
         pool: &PgPool,
         token: &str,
     ) -> Result<Option<Invite>, sqlx::Error> {
 
-        let record = sqlx::query!(
+        let row = sqlx::query(
             r#"
             SELECT
                 id,
@@ -58,24 +50,24 @@ impl InviteRepository {
                 created_at
             FROM invites
             WHERE token = $1
-            "#,
-            token
+            "#
         )
+        .bind(token)
         .fetch_optional(pool)
         .await?;
 
-        Ok(record.map(|r| Invite {
-            id: r.id,
-            outlet_id: r.outlet_id,
-            role: r.role,
-            token: r.token,
-            expired_at: r.expired_at,
-            used: r.used.unwrap_or(false),
-            created_at: r.created_at,
+        Ok(row.map(|r| Invite {
+            id: r.get("id"),
+            outlet_id: r.get("outlet_id"),
+            role: r.get("role"),
+            token: r.get("token"),
+            expired_at: r.try_get("expired_at").ok(),
+            used: r.try_get::<Option<bool>, _>("used").ok().flatten().unwrap_or(false),
+            created_at: r.try_get("created_at").ok().unwrap(),
         }))
     }
 
-    // ✅ MARK AS USED
+    // MARK AS USED
     pub async fn used(
         pool: &PgPool,
         token: &str,
@@ -86,24 +78,26 @@ impl InviteRepository {
         let mut tx = pool.begin().await?;
 
         // Ambil data invite
-        let invite = sqlx::query!(
+        let invite = sqlx::query(
             r#"
             SELECT outlet_id, role
             FROM invites
             WHERE token = $1
             AND used = false
-            "#,
-            token
+            "#
         )
+        .bind(token)
         .fetch_one(&mut *tx)
         .await?;
+
+        let outlet_id: Uuid = invite.get("outlet_id");
+        let role: String = invite.get("role");
 
         // Generate user id
         let user_id = Uuid::new_v4();
 
-        // Hash password
         // Insert user
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO users (
                 id,
@@ -117,17 +111,17 @@ impl InviteRepository {
                 $3,
                 $4
             )
-            "#,
-            user_id,
-            name,
-            email,
-            password
+            "#
         )
+        .bind(user_id)
+        .bind(name)
+        .bind(email)
+        .bind(password)
         .execute(&mut *tx)
         .await?;
 
         // Insert user_outlets
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO user_outlets (
                 user_id,
@@ -139,23 +133,23 @@ impl InviteRepository {
                 $2,
                 $3
             )
-            "#,
-            user_id,
-            invite.outlet_id,
-            invite.role
+            "#
         )
+        .bind(user_id)
+        .bind(outlet_id)
+        .bind(role)
         .execute(&mut *tx)
         .await?;
 
         // Tandai invite sudah dipakai
-        sqlx::query!(
+        sqlx::query(
             r#"
             UPDATE invites
             SET used = true
             WHERE token = $1
-            "#,
-            token
+            "#
         )
+        .bind(token)
         .execute(&mut *tx)
         .await?;
 
@@ -164,18 +158,18 @@ impl InviteRepository {
         Ok(())
     }
 
-    // ❌ DELETE (optional cleanup)
+    // DELETE (optional cleanup)
     pub async fn delete(
         pool: &PgPool,
         id: Uuid,
     ) -> Result<(), sqlx::Error> {
 
-        sqlx::query!(
+        sqlx::query(
             r#"
             DELETE FROM invites WHERE id = $1
-            "#,
-            id
+            "#
         )
+        .bind(id)
         .execute(pool)
         .await?;
 

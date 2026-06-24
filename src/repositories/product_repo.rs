@@ -13,6 +13,7 @@ struct ProductRow {
     tax: i64,
     profit: i64,
     price: i64,
+    image_url: String,
 
     category_id: Option<Uuid>,
     category_name: Option<String>,
@@ -28,6 +29,7 @@ impl ProductRepository {
         tax: i64,
         profit: i64,
         price: i64,
+        image_url: String,
         category_ids: Vec<Uuid>,
         outlet_id: Uuid,
     ) -> Result<(), sqlx::Error> {
@@ -44,10 +46,11 @@ impl ProductRepository {
                     tax,
                     profit,
                     price,
+                    image_url,
                     outlet_id
                 )
                 VALUES (
-                    $1,$2,$3,$4,$5,$6
+                    $1,$2,$3,$4,$5,$6,$7
                 )
                 RETURNING id
                 "#
@@ -57,6 +60,7 @@ impl ProductRepository {
             .bind(tax)
             .bind(profit)
             .bind(price)
+            .bind(image_url)
             .bind(outlet_id)
             .fetch_one(&mut *tx)
             .await?;
@@ -104,6 +108,7 @@ impl ProductRepository {
                 p.tax,
                 p.profit,
                 p.price,
+                p.image_url,
 
                 c.id AS category_id,
                 c.name AS category_name
@@ -138,6 +143,7 @@ impl ProductRepository {
                             tax: row.tax,
                             profit: row.profit,
                             price: row.price,
+                            image_url: row.image_url,
                             categories: vec![],
                         }
                     );
@@ -162,18 +168,20 @@ impl ProductRepository {
     ) -> Result<Option<ProductResponseDTO>, sqlx::Error> {
 
         let rows =
-            sqlx::query!(
+            sqlx::query_as::<_, ProductRow>(
                 r#"
                 SELECT
-                    p.id,
-                    p.name,
+                    p.id AS product_id,
+                    p.name AS product_name,
+
                     p.capital_price,
                     p.tax,
                     p.profit,
                     p.price,
+                    p.image_url,
 
-                    c.id as category_id,
-                    c.name as category_name
+                    c.id AS category_id,
+                    c.name AS category_name
 
                 FROM products p
 
@@ -184,9 +192,9 @@ impl ProductRepository {
                     ON c.id = pc.category_id
 
                 WHERE p.id = $1
-                "#,
-                product_id
+                "#
             )
+            .bind(product_id)
             .fetch_all(pool)
             .await?;
 
@@ -194,30 +202,36 @@ impl ProductRepository {
             return Ok(None);
         }
 
-        let first = &rows[0];
+        let mut map =
+            std::collections::HashMap::<Uuid, ProductResponseDTO>::new();
 
-        Ok(Some(
-            ProductResponseDTO {
-                id: first.id,
-                name: first.name.clone(),
-                capital_price: first.capital_price,
-                tax: first.tax,
-                profit: first.profit,
-                price: first.price,
+        for row in rows {
+            let product =
+                map.entry(row.product_id)
+                    .or_insert(
+                        ProductResponseDTO {
+                            id: row.product_id,
+                            name: row.product_name,
+                            capital_price: row.capital_price,
+                            tax: row.tax,
+                            profit: row.profit,
+                            price: row.price,
+                            image_url: row.image_url,
+                            categories: vec![],
+                        }
+                    );
 
-                categories:
-                    rows.into_iter()
-                        .filter_map(|r| {
-                            Some(
-                                CategoryItemDTO {
-                                    id: r.category_id,
-                                    name: r.category_name,
-                                }
-                            )
-                        })
-                        .collect(),
+            if let Some(category_id) = row.category_id {
+                product.categories.push(
+                    CategoryItemDTO {
+                        id: category_id,
+                        name: row.category_name.unwrap(),
+                    }
+                );
             }
-        ))
+        }
+
+        Ok(map.into_values().next())
     }
 
     pub async fn update_product(
@@ -229,6 +243,7 @@ impl ProductRepository {
         tax: Option<i64>,
         profit: Option<i64>,
         price: Option<i64>,
+        image_url: Option<String>,
 
         add_category_ids: Option<Vec<Uuid>>,
         remove_category_ids: Option<Vec<Uuid>>,
@@ -246,9 +261,10 @@ impl ProductRepository {
                     capital_price = COALESCE($2, capital_price),
                     tax = COALESCE($3, tax),
                     profit = COALESCE($4, profit),
-                    price = COALESCE($5, price)
+                    price = COALESCE($5, price),
+                    image_url = COALESCE($6, image_url)
 
-                WHERE id = $6
+                WHERE id = $7
                 "#
             )
             .bind(name)
@@ -256,6 +272,7 @@ impl ProductRepository {
             .bind(tax)
             .bind(profit)
             .bind(price)
+            .bind(image_url)
             .bind(product_id)
             .execute(&mut *tx)
             .await?;

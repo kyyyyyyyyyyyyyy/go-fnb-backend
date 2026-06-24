@@ -8,7 +8,7 @@ pub struct OutletRepository;
 
 impl OutletRepository {
 
-    // 🔥 CREATE OUTLET
+    // CREATE OUTLET
     pub async fn create(
         pool: &PgPool,
         name: &str,
@@ -24,7 +24,7 @@ impl OutletRepository {
         let mut tx = pool.begin().await?;
 
         // insert address
-        let address_id = sqlx::query_scalar!(
+        let address_id: Uuid = sqlx::query_scalar(
             r#"
             INSERT INTO addresses (
                 address_line,
@@ -36,19 +36,19 @@ impl OutletRepository {
             )
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING id
-            "#,
-            address_line,
-            city,
-            province,
-            postal_code,
-            latitude,
-            longitude
+            "#
         )
+        .bind(address_line)
+        .bind(city)
+        .bind(province)
+        .bind(postal_code)
+        .bind(latitude)
+        .bind(longitude)
         .fetch_one(&mut *tx)
         .await?;
 
         // insert outlet
-        let outlet_id = sqlx::query_scalar!(
+        let outlet_id: Uuid = sqlx::query_scalar(
             r#"
             INSERT INTO outlets (
                 name,
@@ -57,16 +57,16 @@ impl OutletRepository {
             )
             VALUES ($1, $2, $3)
             RETURNING id
-            "#,
-            name,
-            owner_id,
-            address_id
+            "#
         )
+        .bind(name)
+        .bind(owner_id)
+        .bind(address_id)
         .fetch_one(&mut *tx)
         .await?;
 
         // sync owner to user_outlets
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO user_outlets (
                 user_id,
@@ -74,10 +74,10 @@ impl OutletRepository {
                 role
             )
             VALUES ($1, $2, 'owner')
-            "#,
-            owner_id,
-            outlet_id
+            "#
         )
+        .bind(owner_id)
+        .bind(outlet_id)
         .execute(&mut *tx)
         .await?;
 
@@ -86,7 +86,7 @@ impl OutletRepository {
         Ok(outlet_id)
     }
 
-    // 🔍 GET ALL OUTLETS
+    // GET ALL OUTLETS
     pub async fn find_all(
         pool: &PgPool,
     ) -> Result<Vec<Outlet>, sqlx::Error> {
@@ -115,7 +115,7 @@ impl OutletRepository {
         Ok(rows.into_iter().map(Self::map_outlet).collect())
     }
 
-    // 🔍 FIND BY ID
+    // FIND BY ID
     pub async fn find_by_id(
         pool: &PgPool,
         outlet_id: Uuid,
@@ -146,7 +146,7 @@ impl OutletRepository {
         Ok(row.map(Self::map_outlet))
     }
 
-    // 🔍 FIND BY OWNER
+    // FIND BY OWNER
     pub async fn find_by_owner(
         pool: &PgPool,
         owner_id: Uuid,
@@ -178,7 +178,7 @@ impl OutletRepository {
         Ok(rows.into_iter().map(Self::map_outlet).collect())
     }
 
-    // ✏️ UPDATE OUTLET
+    // UPDATE OUTLET
     pub async fn update(
         pool: &PgPool,
         outlet_id: Uuid,
@@ -189,28 +189,28 @@ impl OutletRepository {
 
         // update outlet name
         if let Some(name) = &req.name {
-            sqlx::query!(
+            sqlx::query(
                 r#"
                 UPDATE outlets
                 SET name = $1
                 WHERE id = $2
-                "#,
-                name,
-                outlet_id
+                "#
             )
+            .bind(name)
+            .bind(outlet_id)
             .execute(&mut *tx)
             .await?;
         }
 
         // get address_id
-        let address_id = sqlx::query_scalar!(
+        let address_id: Uuid = sqlx::query_scalar(
             r#"
             SELECT address_id
             FROM outlets
             WHERE id = $1
-            "#,
-            outlet_id
+            "#
         )
+        .bind(outlet_id)
         .fetch_one(&mut *tx)
         .await?;
 
@@ -267,7 +267,7 @@ impl OutletRepository {
         Ok(())
     }
 
-    // ❌ DELETE OUTLET
+    // DELETE OUTLET
     pub async fn delete(
         pool: &PgPool,
         outlet_id: Uuid,
@@ -276,48 +276,48 @@ impl OutletRepository {
         let mut tx = pool.begin().await?;
 
         // get address_id
-        let address_id = sqlx::query_scalar!(
+        let address_id: Option<Uuid> = sqlx::query_scalar(
             r#"
             SELECT address_id
             FROM outlets
             WHERE id = $1
-            "#,
-            outlet_id
+            "#
         )
+        .bind(outlet_id)
         .fetch_optional(&mut *tx)
         .await?;
 
         // delete relations
-        sqlx::query!(
+        sqlx::query(
             r#"
             DELETE FROM user_outlets
             WHERE outlet_id = $1
-            "#,
-            outlet_id
+            "#
         )
+        .bind(outlet_id)
         .execute(&mut *tx)
         .await?;
 
         // delete outlet
-        sqlx::query!(
+        sqlx::query(
             r#"
             DELETE FROM outlets
             WHERE id = $1
-            "#,
-            outlet_id
+            "#
         )
+        .bind(outlet_id)
         .execute(&mut *tx)
         .await?;
 
         // delete address
         if let Some(address_id) = address_id {
-            sqlx::query!(
+            sqlx::query(
                 r#"
                 DELETE FROM addresses
                 WHERE id = $1
-                "#,
-                address_id
+                "#
             )
+            .bind(address_id)
             .execute(&mut *tx)
             .await?;
         }
@@ -327,14 +327,14 @@ impl OutletRepository {
         Ok(())
     }
 
-    // 🔐 CHECK OWNER
+    // CHECK OWNER
     pub async fn is_owner(
         pool: &PgPool,
         outlet_id: Uuid,
         user_id: Uuid,
     ) -> Result<bool, sqlx::Error> {
 
-        let exists = sqlx::query_scalar!(
+        let exists: Option<bool> = sqlx::query_scalar(
             r#"
             SELECT EXISTS(
                 SELECT 1
@@ -343,10 +343,10 @@ impl OutletRepository {
                 AND user_id = $2
                 AND role = 'owner'
             )
-            "#,
-            outlet_id,
-            user_id
+            "#
         )
+        .bind(outlet_id)
+        .bind(user_id)
         .fetch_one(pool)
         .await?;
 
@@ -358,17 +358,17 @@ impl OutletRepository {
         id: Uuid,
     ) -> Result<bool, sqlx::Error> {
 
-        let result = sqlx::query!(
-            "SELECT id FROM outlets WHERE id = $1",
-            id
+        let result: Option<Uuid> = sqlx::query_scalar(
+            "SELECT id FROM outlets WHERE id = $1"
         )
+        .bind(id)
         .fetch_optional(pool)
         .await?;
 
         Ok(result.is_some())
     }
 
-    // 🧩 MAPPER
+    // MAPPER
     fn map_outlet(r: sqlx::postgres::PgRow) -> Outlet {
 
         Outlet {

@@ -11,6 +11,7 @@ use crate::{dto::product_dto::ProductResponseDTO, repositories::product_repo::Pr
         tax: i64,
         profit: i64,
         price: i64,
+        image_url: String,
         category_ids: Vec<Uuid>,
         outlet_id: Uuid,
     ) -> Result<(), AppError> {
@@ -22,6 +23,7 @@ use crate::{dto::product_dto::ProductResponseDTO, repositories::product_repo::Pr
             tax,
             profit,
             price,
+            image_url,
             category_ids,
             outlet_id,
         )
@@ -96,6 +98,7 @@ use crate::{dto::product_dto::ProductResponseDTO, repositories::product_repo::Pr
         tax: Option<i64>,
         profit: Option<i64>,
         price: Option<i64>,
+        image_url: Option<String>,
 
         add_category_ids: Option<Vec<Uuid>>,
         remove_category_ids: Option<Vec<Uuid>>,
@@ -110,6 +113,7 @@ use crate::{dto::product_dto::ProductResponseDTO, repositories::product_repo::Pr
                 tax,
                 profit,
                 price,
+                image_url,
                 add_category_ids,
                 remove_category_ids,
             )

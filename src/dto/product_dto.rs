@@ -8,6 +8,7 @@ pub struct CreateProductDTO {
     pub capital_price: i64,
     pub tax: i64,
     pub profit: i64,
+    pub image_url: String,
     pub outlet_id: Uuid,
     pub category_ids: Vec<Uuid>
 }
@@ -19,6 +20,7 @@ pub struct UpdateProductDTO {
     pub capital_price: Option<i64>,
     pub tax: Option<i64>,
     pub profit: Option<i64>,
+    pub image_url: Option<String>,
     pub add_category_ids: Option<Vec<Uuid>>,
     pub remove_category_ids: Option<Vec<Uuid>>,
 }
@@ -33,6 +35,7 @@ pub struct ProductResponseDTO {
     pub tax: i64,
     pub profit: i64,
     pub price: i64,
+    pub image_url: String,
 
     pub categories: Vec<CategoryItemDTO>,
 }

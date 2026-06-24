@@ -29,6 +29,7 @@ pub async fn create_product(
         body.tax,
         body.profit,
         price,
+        body.image_url,
         body.category_ids,
         body.outlet_id,
     )
@@ -167,6 +168,10 @@ pub async fn update_product(
         + tax
         + profit;
 
+    let image_url =
+        req.image_url
+            .unwrap_or(old.image_url);
+
     let result =
         product_service::update_product(
             &pool,
@@ -180,6 +185,7 @@ pub async fn update_product(
             Some(profit),
 
             Some(price),
+            Some(image_url),
 
             req.add_category_ids,
             req.remove_category_ids,
