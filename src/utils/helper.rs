@@ -57,7 +57,7 @@ pub fn created(message: &str) -> HttpResponse {
     }))
 }
 
-pub fn createdWithDatas<T: serde::Serialize>(message: &str, data: T) -> HttpResponse {
+pub fn created_withDatas<T: serde::Serialize>(message: &str, data: T) -> HttpResponse {
     HttpResponse::Created().json(serde_json::json!({
         "success": true,
         "message": message,
@@ -65,7 +65,7 @@ pub fn createdWithDatas<T: serde::Serialize>(message: &str, data: T) -> HttpResp
     }))
 }
 
-pub fn successWithDatas<T: serde::Serialize>(message: &str, data: T) -> HttpResponse {
+pub fn success_withDatas<T: serde::Serialize>(message: &str, data: T) -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
         "success": true,
         "message": message,

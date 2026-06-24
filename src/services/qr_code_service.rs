@@ -117,7 +117,7 @@ impl QrCodeService {
                 qr_id: qr.id,
                 qr_type: "single".to_string(),
 
-                token: Some(token),
+                outlet_id: qr.outlet_id,
 
                 table: Some(AvailableTableDTO {
                     id: table.id,
@@ -144,7 +144,7 @@ impl QrCodeService {
             qr_id: qr.id,
             qr_type: "multi".to_string(),
 
-            token: None,
+            outlet_id: qr.outlet_id,
 
             table: None,
 

@@ -52,7 +52,7 @@ pub async fn get_categories_by_outlet(
         outlet_id,
     ).await {
         Ok(data) =>
-            helper::successWithDatas(
+            helper::success_withDatas(
                 "categories fetched successfully",
                 data
             ),
@@ -85,7 +85,7 @@ pub async fn get_category_by_id(
         .await?;
 
     Ok(
-        helper::successWithDatas(
+        helper::success_withDatas(
             "category fetched successfully",
             category,
         )

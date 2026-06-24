@@ -65,7 +65,7 @@ pub async fn get_products_by_outlet(
         .await?;
 
     Ok(
-        helper::successWithDatas(
+        helper::success_withDatas(
             "products fetched successfully",
             products,
         )
@@ -96,7 +96,7 @@ pub async fn get_product_by_id(
         .await?;
 
     Ok(
-        helper::successWithDatas(
+        helper::success_withDatas(
             "product fetched successfully",
             product,
         )

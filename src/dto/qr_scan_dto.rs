@@ -12,7 +12,7 @@ pub struct ScanQrResponseDTO {
     pub qr_id: Uuid,
     pub qr_type: String,
 
-    pub token: Option<String>,
+    pub outlet_id: Uuid,
 
     pub table: Option<AvailableTableDTO>,
 

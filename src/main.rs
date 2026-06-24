@@ -8,7 +8,7 @@ use actix_web::{
 use dotenv::dotenv;
 use std::env;
 
-use tracing::{info, warn};
+use tracing::{warn};
 use tracing_appender::{
     non_blocking::WorkerGuard,
     rolling,

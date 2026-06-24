@@ -3,7 +3,10 @@ use tracing::error;
 use uuid::Uuid;
 
 use crate::{
-    dto::order_dto::OrderItems as OrderItemDTO,
+    dto::order_dto::{
+        OrderItems as OrderItemDTO,
+        OrderResponseDTO,
+    },
     models::order_model::OrderItems,
     repositories::{
         order_repo::OrderRepository,
@@ -55,19 +58,20 @@ pub async fn create_order(
                 )
             )?;
 
+        let qty = item.qty as i64;
+
         let item_capital =
-            product.capital_price * item.qty;
+            product.capital_price * qty;
 
         let item_tax =
-            product.tax * item.qty;
+            product.tax * qty;
 
         let item_profit =
-            product.profit * item.qty;
+            product.profit * qty;
 
         let item_total =
             (
-                product.price
-                * item.qty
+                product.price * qty
             )
             + item_tax;
 
@@ -148,4 +152,244 @@ pub async fn create_order(
         })?;
 
     Ok(order_id)
+}
+
+pub async fn get_orders_by_outlet(
+    pool: &PgPool,
+    outlet_id: Uuid,
+) -> Result<Vec<OrderResponseDTO>, AppError> {
+
+    let orders =
+        OrderRepository::get_orders_by_outlet(
+            pool,
+            outlet_id,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                error = ?e,
+                outlet_id = %outlet_id,
+                "failed get orders"
+            );
+            AppError::InternalServerError
+        })?;
+
+    if orders.is_empty() {
+        return Err(
+            AppError::NotFound(
+                "order tidak ditemukan"
+                    .to_string()
+            )
+        );
+    }
+
+    let mut result = Vec::new();
+
+    for order in orders {
+        let items =
+            OrderRepository::get_order_items(
+                pool,
+                order.id,
+            )
+            .await
+            .map_err(|e| {
+                error!(
+                    error = ?e,
+                    order_id = %order.id,
+                    "failed get order items"
+                );
+                AppError::InternalServerError
+            })?;
+
+        result.push(
+            OrderResponseDTO {
+                id: order.id,
+                order_name: order.order_name,
+                order_type: order.order_type,
+                order_status: order.status,
+                order_number: order.order_number,
+                capital_price: order.capital_price,
+                tax: order.tax,
+                profit: order.profit,
+                total: order.total,
+                notes: order.notes,
+                table_id: order.table_id,
+                outlet_id: order.outlet_id,
+                created_at: order.created_at,
+                updated_at: order.updated_at,
+                change_by: order.change_by,
+                items,
+            }
+        );
+    }
+
+    Ok(result)
+}
+
+pub async fn get_order_by_id(
+    pool: &PgPool,
+    order_id: Uuid,
+) -> Result<OrderResponseDTO, AppError> {
+
+    let order =
+        OrderRepository::get_order_by_id(
+            pool,
+            order_id,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                error = ?e,
+                order_id = %order_id,
+                "failed get order"
+            );
+            AppError::InternalServerError
+        })?
+        .ok_or(
+            AppError::NotFound(
+                "order tidak ditemukan".to_string()
+            )
+        )?;
+
+    let items =
+        OrderRepository::get_order_items(
+            pool,
+            order.id,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                error = ?e,
+                order_id = %order.id,
+                "failed get order items"
+            );
+            AppError::InternalServerError
+        })?;
+
+    Ok(
+        OrderResponseDTO {
+            id: order.id,
+            order_name: order.order_name,
+            order_type: order.order_type,
+            order_status: order.status,
+            order_number: order.order_number,
+            capital_price: order.capital_price,
+            tax: order.tax,
+            profit: order.profit,
+            total: order.total,
+            notes: order.notes,
+            table_id: order.table_id,
+            outlet_id: order.outlet_id,
+            created_at: order.created_at,
+            updated_at: order.updated_at,
+            change_by: order.change_by,
+            items,
+        }
+    )
+}
+
+pub async fn update_order(
+    pool: &PgPool,
+    order_id: Uuid,
+
+    order_name: Option<String>,
+    order_type: Option<String>,
+    table_id: Option<Uuid>,
+    notes: Option<String>,
+    change_by: Uuid,
+) -> Result<(), AppError> {
+
+    let updated =
+        OrderRepository::update_order(
+            pool,
+            order_id,
+            order_name,
+            order_type,
+            table_id,
+            notes,
+            change_by,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                error = ?e,
+                order_id = %order_id,
+                "failed update order"
+            );
+            AppError::InternalServerError
+        })?;
+
+    if !updated {
+        return Err(
+            AppError::NotFound(
+                "order tidak ditemukan".to_string()
+            )
+        );
+    }
+
+    Ok(())
+}
+
+pub async fn update_order_status(
+    pool: &PgPool,
+    order_id: Uuid,
+    status: String,
+) -> Result<(), AppError> {
+
+    let updated =
+        OrderRepository::update_order_status(
+            pool,
+            order_id,
+            status,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                error = ?e,
+                order_id = %order_id,
+                "failed update order status"
+            );
+            AppError::InternalServerError
+        })?;
+
+    if !updated {
+        return Err(
+            AppError::NotFound(
+                "order tidak ditemukan".to_string()
+            )
+        );
+    }
+
+    Ok(())
+}
+
+pub async fn delete_order(
+    pool: &PgPool,
+    order_id: Uuid,
+) -> Result<(), AppError> {
+
+    let deleted =
+        OrderRepository::delete_order(
+            pool,
+            order_id,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                error = ?e,
+                order_id = %order_id,
+                "failed delete order"
+            );
+            AppError::InternalServerError
+        })?;
+
+    if !deleted {
+        return Err(
+            AppError::NotFound(
+                "order tidak ditemukan".to_string()
+            )
+        );
+    }
+
+    Ok(())
 }

@@ -44,7 +44,7 @@ pub async fn get_all_outlets(
 
     let data = OutletService::get_all_outlets(&pool).await?;
 
-    Ok(utils::helper::successWithDatas("Outlets fetched successfully", data))
+    Ok(utils::helper::success_withDatas("Outlets fetched successfully", data))
 }
 
 //
@@ -57,7 +57,7 @@ pub async fn get_outlet_by_id(
 
     let data = OutletService::get_outlet_by_id(&pool, path.into_inner()).await?;
 
-    Ok(utils::helper::successWithDatas("Outlet fetched successfully", data))
+    Ok(utils::helper::success_withDatas("Outlet fetched successfully", data))
 }
 
 //
@@ -72,7 +72,7 @@ pub async fn get_my_outlets(
 
     let data = OutletService::get_my_outlets(&pool, user_id).await?;
 
-    Ok(utils::helper::successWithDatas("My outlets fetched successfully", data))
+    Ok(utils::helper::success_withDatas("My outlets fetched successfully", data))
 }
 
 //

@@ -191,13 +191,50 @@ impl OrderRepository {
                 r#"
                 UPDATE orders
                 SET
-                    order_status = $1,
+                    status = $1,
                     updated_at = NOW()
 
                 WHERE id = $2
                 "#
             )
             .bind(status)
+            .bind(order_id)
+            .execute(pool)
+            .await?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
+    pub async fn update_order(
+        pool: &PgPool,
+        order_id: Uuid,
+
+        order_name: Option<String>,
+        order_type: Option<String>,
+        table_id: Option<Uuid>,
+        notes: Option<String>,
+        change_by: Uuid,
+    ) -> Result<bool, sqlx::Error> {
+
+        let result =
+            sqlx::query(
+                r#"
+                UPDATE orders
+                SET
+                    order_name = COALESCE($1, order_name),
+                    order_type = COALESCE($2, order_type),
+                    table_id = COALESCE($3, table_id),
+                    notes = COALESCE($4, notes),
+                    change_by = $5,
+                    updated_at = NOW()
+                WHERE id = $6
+                "#
+            )
+            .bind(order_name)
+            .bind(order_type)
+            .bind(table_id)
+            .bind(notes)
+            .bind(change_by)
             .bind(order_id)
             .execute(pool)
             .await?;

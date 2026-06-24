@@ -34,7 +34,7 @@ pub async fn create_qr(
 
     match QrCodeService::create(&pool, &dto).await {
         Ok(result) => {
-            helper::successWithDatas("qr created successfully", result)
+            helper::success_withDatas("qr created successfully", result)
         }
         Err(err) => {
             error!(
@@ -60,7 +60,7 @@ pub async fn scan_qr(
 
     match QrCodeService::scan(&pool, &slug).await {
         Ok(Some(result)) => {
-            helper::successWithDatas("QR found", result)
+            helper::success_withDatas("QR found", result)
         }
         Ok(None) => {
             helper::not_found("QR not found or inactive")
@@ -91,7 +91,7 @@ pub async fn select_table(
     .await
     {
         Ok(token) => {
-            helper::successWithDatas("Table selected", token)
+            helper::success_withDatas("Table selected", token)
         }
 
         Err(err) => {
@@ -117,7 +117,7 @@ pub async fn get_qr_tables(
 
     match QrCodeService::get_tables(&pool, qr_id).await {
         Ok(result) => {
-            helper::successWithDatas("Tables fetched successfully", result)
+            helper::success_withDatas("Tables fetched successfully", result)
         }
         Err(err) => {
             error!(
@@ -142,7 +142,7 @@ pub async fn get_qr_by_outlet(
 
     match QrCodeService::get_by_outlet(&pool, outlet_id).await {
         Ok(result) => {
-            helper::successWithDatas("QRs fetched successfully", result)
+            helper::success_withDatas("QRs fetched successfully", result)
         }
         Err(err) => {
             error!(
@@ -167,7 +167,7 @@ pub async fn regenerate_qr_slug(
 
     match QrCodeService::regenerate_slug(&pool, qr_id).await {
         Ok(result) => {
-            helper::successWithDatas("QR slug regenerated successfully", result)
+            helper::success_withDatas("QR slug regenerated successfully", result)
         }
         Err(sqlx::Error::RowNotFound) => {
             helper::not_found("QR not found")

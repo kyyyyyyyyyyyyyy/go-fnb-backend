@@ -27,7 +27,7 @@ pub async fn create_invite(
 
     match result {
         Ok(invite) => {
-            helper::createdWithDatas(
+            helper::created_withDatas(
                 "Invite created successfully",
                 json!({
                     "url": format!(
@@ -60,7 +60,7 @@ pub async fn validate_invite(
     let result = InviteService::validate_invite(&pool, &token).await;
 
     match result {
-        Ok(invite) => helper::successWithDatas("Invite valid", invite),
+        Ok(invite) => helper::success_withDatas("Invite valid", invite),
         Err(err) => helper::error_response(&err.to_string()),
     }
 }
