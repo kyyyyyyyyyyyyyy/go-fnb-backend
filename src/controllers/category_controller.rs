@@ -24,8 +24,9 @@ pub async fn create_category(
         &pool,
         body.name,
         body.outlet_id,
+        body.image_url,
     ).await {
-        Ok(_) => helper::created("category berhasil dibuat"),
+        Ok(category) => helper::created_withDatas("category berhasil dibuat", category),
         Err(e) => helper::error_response(&e),
     }
 }
@@ -123,13 +124,15 @@ pub async fn update_category(
             &pool,
             category_id,
             body.name,
+            body.image_url,
         )
         .await;
 
     match result {
-        Ok(_) =>
-            helper::success(
-                "category updated successfully"
+        Ok(category) =>
+            helper::success_withDatas(
+                "category updated successfully",
+                category,
             ),
 
         Err(e) =>

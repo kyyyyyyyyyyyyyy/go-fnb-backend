@@ -1,0 +1,26 @@
+info:
+  name: create qr code by table
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8081/api/qrcodes
+  body:
+    type: json
+    data: |-
+      {
+          "outlet_id": "15c4bdc8-984d-4b8f-85bc-8dada8265586",
+        "table_ids": [
+          "9d4e7ac3-9b39-4162-a4db-cdfdbf448d45"
+        ]
+      }
+  auth:
+    type: bearer
+    token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxNTFlZDFmMy1mNDMzLTQ3MzEtYWFiOS0yNDJiNjEyYjcxNzkiLCJleHAiOjE3ODA2MjYyOTJ9.B6qsI8xjDPPnahRSgOnFme8MYuNgdFfSlcN8GHf7LwA
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

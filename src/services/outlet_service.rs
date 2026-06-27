@@ -21,7 +21,7 @@ impl OutletService {
         postal_code: Option<String>,
         latitude: Option<f64>,
         longitude: Option<f64>,
-    ) -> Result<Uuid, AppError> {
+    ) -> Result<Outlet, AppError> {
 
         // validation
         if name.trim().is_empty() {
@@ -54,7 +54,12 @@ impl OutletService {
         .await
         .map_err(|_| AppError::InternalServerError)?;
 
-        Ok(outlet_id)
+        let outlet = OutletRepository::find_by_id(pool, outlet_id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?
+            .ok_or(AppError::InternalServerError)?;
+
+        Ok(outlet)
     }
 
     // 🔍 GET ALL OUTLETS

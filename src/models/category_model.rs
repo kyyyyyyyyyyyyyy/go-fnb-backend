@@ -9,5 +9,6 @@ pub struct Category {
     pub id: Uuid,
     pub name: String,
     pub outlet_id: Uuid,
+    pub image_url: Option<String>,
     pub created_at: NaiveDateTime,
 }

@@ -1,0 +1,23 @@
+info:
+  name: update
+  type: http
+  seq: 3
+
+http:
+  method: PATCH
+  url: http://localhost:8081/api/tables/9d4e7ac3-9b39-4162-a4db-cdfdbf448d45
+  body:
+    type: json
+    data: |-
+      {
+        "name": "pecut"
+      }
+  auth:
+    type: bearer
+    token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3NWEwMzhlMi1hMTg4LTRkNTUtOGI2NS0xNDk3NDJkYWJmMWMiLCJleHAiOjE3ODA3NDAxNTF9.XaJf1QvcgkFoAvoOK_uUhn5gB1JlJ324Daj98UPG1wo
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

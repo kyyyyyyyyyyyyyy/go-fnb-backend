@@ -1,0 +1,25 @@
+info:
+  name: create
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8081/api/tables
+  body:
+    type: json
+    data: |-
+      {
+        "outlet_id": "15c4bdc8-984d-4b8f-85bc-8dada8265586",
+        "name": "meja 001",
+        "location": "didie"
+      }
+  auth:
+    type: bearer
+    token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3NWEwMzhlMi1hMTg4LTRkNTUtOGI2NS0xNDk3NDJkYWJmMWMiLCJleHAiOjE3ODAwNjk5MTN9.V0yD0igy-xDAMnHFK-clg87kQNv1VKFcwyuMaCkDmrk
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

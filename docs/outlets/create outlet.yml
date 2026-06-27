@@ -1,0 +1,29 @@
+info:
+  name: create outlet
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:8081/api/outlets
+  body:
+    type: json
+    data: |-
+      {
+        "name": "on grass",
+        "address_line": "j;.Pramuka No 81, Puwawianagun Kuningan",
+        "city": "Kuningan",
+        "province": "jawa barat",
+        "postal_code": "4551",
+        "latitude": 6.877404156793134,
+        "longitude": 108.49747828279568
+      }
+  auth:
+    type: bearer
+    token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxNTFlZDFmMy1mNDMzLTQ3MzEtYWFiOS0yNDJiNjEyYjcxNzkiLCJleHAiOjE3ODA3MTQzODl9.qIQBfVPjMbCqetp9-nXR_4Py2Seuv51hM4ZSnw8jqbk
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

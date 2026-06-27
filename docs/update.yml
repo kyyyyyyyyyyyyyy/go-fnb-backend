@@ -1,0 +1,28 @@
+info:
+  name: update
+  type: http
+  seq: 6
+
+http:
+  method: PATCH
+  url: http://localhost:8080/outlets/3ed12037-eeef-477c-9ef5-9f418602be8f
+  body:
+    type: json
+    data: |-
+      {
+      //   "name": "semoga jaya"
+      //   "address_line": "j;.Pramuka No 81, Puwawianagun Kuningan",
+        "city": "kuningan"
+      //   "province": "jawa barat",
+      //   "postal_code": "4551",
+      //   "owner_id": "2c7eabf9-63a9-4b08-b822-3be8611c90ce"
+      }
+  auth:
+    type: bearer
+    token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyYzdlYWJmOS02M2E5LTRiMDgtYjgyMi0zYmU4NjExYzkwY2UiLCJleHAiOjE3NzYyMTc1ODd9.uDZwqbjuiEFBuWABMH1ysrQfbJqOOb7WLsTG9n_bEpc
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

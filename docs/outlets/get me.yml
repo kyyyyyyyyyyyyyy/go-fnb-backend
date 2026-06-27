@@ -1,0 +1,17 @@
+info:
+  name: get me
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: http://localhost:8081/api/outlets/2eff40b1-5971-4ad3-8e36-8f485c0403a1
+  auth:
+    type: bearer
+    token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxNTFlZDFmMy1mNDMzLTQ3MzEtYWFiOS0yNDJiNjEyYjcxNzkiLCJleHAiOjE3ODA3MTQzODl9.qIQBfVPjMbCqetp9-nXR_4Py2Seuv51hM4ZSnw8jqbk
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

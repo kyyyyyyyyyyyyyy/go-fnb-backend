@@ -1,0 +1,23 @@
+info:
+  name: update nama
+  type: http
+  seq: 2
+
+http:
+  method: PUT
+  url: http://localhost:8081/api/categories/2eff40b1-5971-4ad3-8e36-8f485c0403a1/4c977e4b-e7e4-4eea-85a0-f855ab3a722b
+  body:
+    type: json
+    data: |-
+      {
+        "name": "makanan ringan"
+      }
+  auth:
+    type: bearer
+    token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1NmFkOGI1ZC0zZmRlLTRjNDItODViYy1hMGM0MmMxMzg5OGYiLCJleHAiOjE3ODExODkyNDd9.SZQ2SZeS5sw6SRHIl9tmwnJa9XRkbDp9yhzmKfszltc
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

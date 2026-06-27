@@ -1,0 +1,20 @@
+info:
+  name: select table after scan
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: http://localhost:8081/api/scan/select-table
+  body:
+    type: json
+    data: |-
+      {
+        "table_id": "39fb1cd6-a32e-4146-b2a1-00125c1d4904"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

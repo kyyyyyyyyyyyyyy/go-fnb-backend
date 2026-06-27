@@ -19,7 +19,7 @@ pub async fn create_outlet(
 
     let user_id = get_user_id(&http_req)?;
 
-    let _ = OutletService::create_outlet(
+    let outlet = OutletService::create_outlet(
         &pool,
         user_id,
         req.name.clone(),
@@ -32,7 +32,7 @@ pub async fn create_outlet(
     )
     .await?;
 
-    Ok(utils::helper::created("Outlet created successfully"))
+    Ok(utils::helper::created_withDatas("Outlet created successfully", outlet))
 }
 
 //

@@ -7,13 +7,14 @@ use crate::{models::category_model::Category, repositories::category_repo::Categ
         pool: &PgPool,
         name: String,
         outlet_id: Uuid,
-    ) -> Result<(), String> {
+        image_url: Option<String>,
+    ) -> Result<Category, String> {
 
-        CategoryRepository::create_category(pool, name, outlet_id)
+        let category = CategoryRepository::create_category(pool, name, outlet_id, image_url)
             .await
             .map_err(|e: sqlx::Error| e.to_string())?;
 
-        Ok(())
+        Ok(category)
     }
 
     pub async fn get_categories_by_outlet(
@@ -47,9 +48,10 @@ use crate::{models::category_model::Category, repositories::category_repo::Categ
         pool: &PgPool,
         category_id: Uuid,
         name: String,
+        image_url: Option<String>,
     ) -> Result<Category, String> {
 
-        let category = CategoryRepository::update_category(pool, category_id, name)
+        let category = CategoryRepository::update_category(pool, category_id, name, image_url)
             .await
             .map_err(|e: sqlx::Error| e.to_string())?;
 

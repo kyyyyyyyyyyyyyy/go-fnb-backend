@@ -1,0 +1,29 @@
+info:
+  name: update outlet
+  type: http
+  seq: 3
+
+http:
+  method: PATCH
+  url: http://localhost:8081/api/outlets/2eff40b1-5971-4ad3-8e36-8f485c0403a1
+  body:
+    type: json
+    data: |-
+      {
+        "name": "for real"
+      //   "address_line": "j;.floor No 81, Puwawianagun Kuningan"
+      //   "city": "Kuningan",
+      //   "province": "jawa barat",
+      //   "postal_code": "4551"
+      //   "latitude": 6.877404156793134,
+      //   "longitude": 108.49747828279568
+      }
+  auth:
+    type: bearer
+    token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxNTFlZDFmMy1mNDMzLTQ3MzEtYWFiOS0yNDJiNjEyYjcxNzkiLCJleHAiOjE3ODA3MTQzODl9.qIQBfVPjMbCqetp9-nXR_4Py2Seuv51hM4ZSnw8jqbk
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

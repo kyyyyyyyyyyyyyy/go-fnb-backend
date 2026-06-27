@@ -1,0 +1,24 @@
+info:
+  name: create category
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8081/api/categories
+  body:
+    type: json
+    data: |-
+      {
+        "name": "makanan berat",
+        "outlet_id": "2eff40b1-5971-4ad3-8e36-8f485c0403a1"
+      }
+  auth:
+    type: bearer
+    token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1NmFkOGI1ZC0zZmRlLTRjNDItODViYy1hMGM0MmMxMzg5OGYiLCJleHAiOjE3ODExODkyNDd9.SZQ2SZeS5sw6SRHIl9tmwnJa9XRkbDp9yhzmKfszltc
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
