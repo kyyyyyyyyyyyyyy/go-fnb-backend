@@ -9,7 +9,6 @@ pub struct CreateProductDTO {
     pub tax: i64,
     pub profit: i64,
     pub image_url: String,
-    pub outlet_id: Uuid,
     pub category_ids: Vec<Uuid>
 }
 
@@ -36,8 +35,14 @@ pub struct ProductResponseDTO {
     pub profit: i64,
     pub price: i64,
     pub image_url: String,
+    pub available: bool,
 
     pub categories: Vec<CategoryItemDTO>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateProductAvailableDTO {
+    pub available: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

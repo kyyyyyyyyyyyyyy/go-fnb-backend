@@ -13,6 +13,7 @@ pub struct Product {
     pub profit: i64,
     pub price: i64,
     pub image_url: String,
+    pub available: bool,
     pub outlet_id: Uuid,
     pub created_at: NaiveDateTime,
 }

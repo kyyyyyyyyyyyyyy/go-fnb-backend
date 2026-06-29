@@ -42,17 +42,10 @@ pub async fn create_order(
 pub async fn get_orders_by_outlet(
     pool: web::Data<PgPool>,
     http_req: HttpRequest,
-    path: web::Path<uuid::Uuid>,
 ) -> Result<impl Responder, AppError> {
 
-    let outlet_id = path.into_inner();
-
-    helper::ensure_user_has_outlet(
-        &http_req,
-        &pool,
-        outlet_id,
-    )
-    .await?;
+    let outlet_id =
+        helper::get_outlet_id(&http_req)?;
 
     let orders =
         order_service::get_orders_by_outlet(
@@ -72,18 +65,13 @@ pub async fn get_orders_by_outlet(
 pub async fn get_order_by_id(
     pool: web::Data<PgPool>,
     http_req: HttpRequest,
-    path: web::Path<(uuid::Uuid, uuid::Uuid)>,
+    path: web::Path<uuid::Uuid>,
 ) -> Result<impl Responder, AppError> {
 
-    let (outlet_id, order_id) =
-        path.into_inner();
+    let order_id = path.into_inner();
 
-    helper::ensure_user_has_outlet(
-        &http_req,
-        &pool,
-        outlet_id,
-    )
-    .await?;
+    let _outlet_id =
+        helper::get_outlet_id(&http_req)?;
 
     let order =
         order_service::get_order_by_id(
@@ -103,21 +91,14 @@ pub async fn get_order_by_id(
 pub async fn update_order(
     pool: web::Data<PgPool>,
     http_req: HttpRequest,
-    path: web::Path<(uuid::Uuid, uuid::Uuid)>,
+    path: web::Path<uuid::Uuid>,
     body: web::Json<crate::dto::order_dto::UpdateOrder>,
 ) -> impl Responder {
 
-    let (outlet_id, order_id) =
-        path.into_inner();
+    let order_id = path.into_inner();
 
     let user_id =
-        match helper::ensure_user_has_outlet(
-            &http_req,
-            &pool,
-            outlet_id,
-        )
-        .await
-        {
+        match helper::get_user_id(&http_req) {
             Ok(uid) => uid,
             Err(e) => {
                 return helper::error_response(
@@ -137,6 +118,9 @@ pub async fn update_order(
             req.table_id,
             req.notes,
             user_id,
+            req.update_items,
+            req.add_items,
+            req.remove_item_ids,
         )
         .await;
 
@@ -156,27 +140,21 @@ pub async fn update_order(
 pub async fn update_order_status(
     pool: web::Data<PgPool>,
     http_req: HttpRequest,
-    path: web::Path<(uuid::Uuid, uuid::Uuid)>,
+    path: web::Path<uuid::Uuid>,
     body: web::Json<crate::dto::order_dto::UpdateOrderStatus>,
 ) -> impl Responder {
 
-    let (outlet_id, order_id) =
-        path.into_inner();
+    let order_id = path.into_inner();
 
-    match helper::ensure_user_has_outlet(
-        &http_req,
-        &pool,
-        outlet_id,
-    )
-    .await
-    {
-        Ok(_) => {}
-        Err(e) => {
-            return helper::error_response(
-                &e.to_string()
-            )
-        }
-    }
+    let _outlet_id =
+        match helper::get_outlet_id(&http_req) {
+            Ok(id) => id,
+            Err(e) => {
+                return helper::error_response(
+                    &e.to_string()
+                )
+            }
+        };
 
     let req = body.into_inner();
 
@@ -204,24 +182,20 @@ pub async fn update_order_status(
 pub async fn delete_order(
     pool: web::Data<PgPool>,
     http_req: HttpRequest,
-    path: web::Path<(uuid::Uuid, uuid::Uuid)>,
+    path: web::Path<uuid::Uuid>,
 ) -> impl Responder {
 
-    let (outlet_id, order_id) =
-        path.into_inner();
+    let order_id = path.into_inner();
 
-    match helper::ensure_user_has_outlet(
-        &http_req,
-        &pool,
-        outlet_id,
-    ).await {
-        Ok(_) => {}
-        Err(e) => {
-            return helper::error_response(
-                &e.to_string()
-            )
-        }
-    }
+    let _outlet_id =
+        match helper::get_outlet_id(&http_req) {
+            Ok(id) => id,
+            Err(e) => {
+                return helper::error_response(
+                    &e.to_string()
+                )
+            }
+        };
 
     let result =
         order_service::delete_order(

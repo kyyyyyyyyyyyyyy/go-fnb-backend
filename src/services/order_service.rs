@@ -4,13 +4,14 @@ use uuid::Uuid;
 
 use crate::{
     dto::order_dto::{
-        OrderItems as OrderItemDTO,
-        OrderResponseDTO,
+        AddOrderItem, OrderItems as OrderItemDTO,
+        OrderResponseDTO, UpdateOrderItem,
     },
     models::order_model::OrderItems,
     repositories::{
         order_repo::OrderRepository,
         product_repo::ProductRepository,
+        table_repo::TableRepository,
     },
     utils::app_error::AppError,
 };
@@ -86,7 +87,7 @@ pub async fn create_order(
 
                 order_id: None,
 
-                product_id: item.product_id,
+                product_id: Some(item.product_id),
 
                 qty: item.qty,
 
@@ -148,6 +149,18 @@ pub async fn create_order(
                 "failed create order"
             );
 
+            AppError::InternalServerError
+        })?;
+
+    // bersihkan token meja setelah order berhasil
+    TableRepository::delete_token(pool, table_id)
+        .await
+        .map_err(|e| {
+            error!(
+                error = ?e,
+                table_id = %table_id,
+                "failed to clear table token after order"
+            );
             AppError::InternalServerError
         })?;
 
@@ -297,10 +310,111 @@ pub async fn update_order(
     table_id: Option<Uuid>,
     notes: Option<String>,
     change_by: Uuid,
+
+    update_items: Option<Vec<UpdateOrderItem>>,
+    add_items: Option<Vec<AddOrderItem>>,
+    remove_item_ids: Option<Vec<Uuid>>,
 ) -> Result<(), AppError> {
 
+    // ambil current items untuk update sub_total
+    let current_items =
+        OrderRepository::get_order_items(
+            pool,
+            order_id,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                error = ?e,
+                order_id = %order_id,
+                "failed get order items for update"
+            );
+            AppError::InternalServerError
+        })?;
+
+    let mut update_items_with_total: Vec<(Uuid, i32, i64)> =
+        Vec::new();
+
+    if let Some(items) = update_items {
+        for item in items {
+            let current = current_items
+                .iter()
+                .find(|ci| ci.id == Some(item.id))
+                .ok_or(
+                    AppError::NotFound(
+                        "order item tidak ditemukan".into()
+                    )
+                )?;
+
+            let sub_total =
+                (current.capital_price
+                + current.profit
+                + current.tax
+                + current.tax)
+                * item.qty as i64;
+
+            update_items_with_total.push(
+                (item.id, item.qty, sub_total)
+            );
+        }
+    }
+
+    let mut add_order_items: Vec<OrderItems> =
+        Vec::new();
+
+    if let Some(items) = add_items {
+        for item in items {
+            let product =
+                ProductRepository::get_product_by_id(
+                    pool,
+                    item.product_id,
+                )
+                .await
+                .map_err(|e| {
+                    error!(
+                        error = ?e,
+                        product_id = %item.product_id,
+                        "failed get product for add item"
+                    );
+                    AppError::InternalServerError
+                })?
+                .ok_or(
+                    AppError::NotFound(
+                        "produk tidak ditemukan".into()
+                    )
+                )?;
+
+            let qty = item.qty as i64;
+
+            let sub_total =
+                (product.capital_price
+                + product.profit
+                + product.tax
+                + product.tax)
+                * qty;
+
+            add_order_items.push(
+                OrderItems {
+                    id: None,
+                    order_id: None,
+                    product_id: Some(item.product_id),
+                    qty: item.qty,
+                    sub_total,
+                    capital_price: product.capital_price,
+                    profit: product.profit,
+                    tax: product.tax,
+                    discount: 0,
+                    notes: item.notes,
+                }
+            );
+        }
+    }
+
+    let remove_ids: Vec<Uuid> =
+        remove_item_ids.unwrap_or_default();
+
     let updated =
-        OrderRepository::update_order(
+        OrderRepository::update_order_with_items(
             pool,
             order_id,
             order_name,
@@ -308,13 +422,16 @@ pub async fn update_order(
             table_id,
             notes,
             change_by,
+            &update_items_with_total,
+            &add_order_items,
+            &remove_ids,
         )
         .await
         .map_err(|e| {
             error!(
                 error = ?e,
                 order_id = %order_id,
-                "failed update order"
+                "failed update order with items"
             );
             AppError::InternalServerError
         })?;

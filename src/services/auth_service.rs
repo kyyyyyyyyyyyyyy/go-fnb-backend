@@ -1,5 +1,6 @@
 use sqlx::PgPool;
 use std::env;
+use uuid::Uuid;
 
 use crate::{
     repositories::user_repo,
@@ -44,7 +45,23 @@ pub async fn login(
         return Err("Invalid credentials".to_string());
     }
 
-    Ok(jwt::generate_token(&user.id))
+    let user_id = Uuid::parse_str(&user.id).map_err(|_| "Invalid user id")?;
+
+    let outlet_id: Option<String> = sqlx::query_scalar(
+        r#"
+        SELECT outlet_id::text
+        FROM user_outlets
+        WHERE user_id = $1
+        LIMIT 1
+        "#
+    )
+    .bind(user_id)
+    .fetch_optional(db)
+    .await
+    .map_err(|_| "DB error")?
+    .flatten();
+
+    Ok(jwt::generate_token(&user.id, outlet_id.as_deref()))
 }
 
 pub async fn exchange_code(code: &str) -> Result<String, String> {
@@ -134,5 +151,21 @@ pub async fn handle_google_callback(
         }
     };
 
-    Ok(jwt::generate_token(&user.id))
+    let user_id = Uuid::parse_str(&user.id).map_err(|_| "Invalid user id")?;
+
+    let outlet_id: Option<String> = sqlx::query_scalar(
+        r#"
+        SELECT outlet_id::text
+        FROM user_outlets
+        WHERE user_id = $1
+        LIMIT 1
+        "#
+    )
+    .bind(user_id)
+    .fetch_optional(db)
+    .await
+    .map_err(|_| "DB error")?
+    .flatten();
+
+    Ok(jwt::generate_token(&user.id, outlet_id.as_deref()))
 }

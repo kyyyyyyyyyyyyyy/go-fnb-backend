@@ -31,7 +31,7 @@ pub fn init(cfg: &mut web::ServiceConfig) {
                     .wrap(auth)
 
                     .route(
-                        "/outlet/{outlet_id}",
+                        "",
                         web::get()
                         .to(
                             order_controller::get_orders_by_outlet
@@ -39,7 +39,7 @@ pub fn init(cfg: &mut web::ServiceConfig) {
                     )
 
                     .route(
-                        "/{outlet_id}/{id}",
+                        "/{id}",
                         web::get()
                         .to(
                             order_controller::get_order_by_id
@@ -47,7 +47,7 @@ pub fn init(cfg: &mut web::ServiceConfig) {
                     )
 
                     .route(
-                        "/{outlet_id}/{id}",
+                        "/{id}",
                         web::patch()
                         .to(
                             order_controller::update_order
@@ -55,7 +55,7 @@ pub fn init(cfg: &mut web::ServiceConfig) {
                     )
 
                     .route(
-                        "/{outlet_id}/{id}/status",
+                        "/{id}/status",
                         web::patch()
                         .to(
                             order_controller::update_order_status
@@ -63,7 +63,7 @@ pub fn init(cfg: &mut web::ServiceConfig) {
                     )
 
                     .route(
-                        "/{outlet_id}/{id}",
+                        "/{id}",
                         web::delete()
                         .to(
                             order_controller::delete_order

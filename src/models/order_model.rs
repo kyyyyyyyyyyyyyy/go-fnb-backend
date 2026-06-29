@@ -27,7 +27,7 @@ pub struct Order {
 pub struct OrderItems {
     pub id: Option<Uuid>,
     pub order_id: Option<Uuid>,
-    pub product_id: Uuid,
+    pub product_id: Option<Uuid>,
     pub qty: i32,
     pub sub_total: i64,
     pub capital_price: i64,

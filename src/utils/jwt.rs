@@ -8,9 +8,10 @@ const SECRET: &[u8] = b"secret_key";
 pub struct Claims {
     pub sub: String,
     pub exp: usize,
+    pub outlet_id: Option<String>,
 }
 
-pub fn generate_token(user_id: &str) -> String {
+pub fn generate_token(user_id: &str, outlet_id: Option<&str>) -> String {
     let expiration = Utc::now()
         .checked_add_signed(Duration::hours(24))
         .unwrap()
@@ -19,6 +20,7 @@ pub fn generate_token(user_id: &str) -> String {
     let claims = Claims {
         sub: user_id.to_string(),
         exp: expiration as usize,
+        outlet_id: outlet_id.map(|s| s.to_string()),
     };
 
     encode(

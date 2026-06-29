@@ -2,48 +2,48 @@ use uuid::Uuid;
 use sqlx::PgPool;
 use rand::{distributions::Alphanumeric, Rng};
 
-use crate::repositories::qr_code_repo::QrCodeRepository;
+use crate::dto::product_dto::CategoryItemDTO;
 use crate::dto::qr_code_dto::{CreateQrDTO, CreateQrWithTablesDTO, QrResponseDTO};
-use crate::dto::qr_scan_dto::{AvailableTableDTO, ScanQrResponseDTO, TableDTO};
+use crate::dto::qr_scan_dto::{AvailableTableDTO, ProductScanDTO, ScanQrResponseDTO, TableDTO};
+use crate::repositories::category_repo::CategoryRepository;
+use crate::repositories::product_repo::ProductRepository;
+use crate::repositories::qr_code_repo::QrCodeRepository;
 use crate::repositories::table_repo::TableRepository;
 
 pub struct QrCodeService;
 
 impl QrCodeService {
 
-    // 🔥 CREATE QR + attach tables me
     pub async fn create(
         pool: &PgPool,
+        outlet_id: Uuid,
         dto: &CreateQrDTO,
     ) -> Result<QrResponseDTO, sqlx::Error> {
 
-        // generate slug random
         let slug: String = rand::thread_rng()
             .sample_iter(&Alphanumeric)
             .take(12)
             .map(char::from)
             .collect();
 
-        // insert QR
         let qr = QrCodeRepository::create_qr(
             pool,
-            dto.outlet_id,
+            outlet_id,
             slug.clone(),
         ).await?;
 
         let table_ids = dto.table_ids.clone();
 
-        // attach tables (pivot)
         QrCodeRepository::attach_tables(
             pool,
             qr.id,
-            table_ids.clone() // ⚠️ clone karena Vec
+            table_ids.clone()
         ).await?;
 
         Ok(QrResponseDTO {
             id: qr.id,
             slug,
-            table_ids, // ⚠️ clone lagi
+            table_ids,
         })
     }
 
@@ -85,20 +85,40 @@ impl QrCodeService {
             None => return Ok(None),
         };
 
-        let tables =
-            TableRepository::get_available_tables_by_qr(pool, qr.id).await?;
+        let all_tables =
+            QrCodeRepository::get_tables_by_qr(pool, qr.id).await?;
 
-        // tidak ada meja tersedia
-        if tables.is_empty() {
+        if all_tables.is_empty() {
             return Ok(None);
         }
+
+        // data pendukung (categories + products)
+        let categories = CategoryRepository::get_categories_by_outlet(pool, qr.outlet_id).await?
+            .into_iter()
+            .map(|c| CategoryItemDTO { id: c.id, name: c.name })
+            .collect::<Vec<_>>();
+
+        let products = ProductRepository::get_product_by_outlet(pool, qr.outlet_id).await?
+            .into_iter()
+            .map(|p| ProductScanDTO {
+                id: p.id,
+                name: p.name,
+                price: p.price,
+                image_url: p.image_url,
+                categories: p.categories,
+            })
+            .collect::<Vec<_>>();
 
         // =========================================
         // SINGLE TABLE
         // =========================================
-        if tables.len() == 1 {
+        if all_tables.len() == 1 {
 
-            let table = &tables[0];
+            let table = &all_tables[0];
+
+            if table.token.is_some() {
+                return Err(sqlx::Error::Protocol("meja sudah digunakan".into()));
+            }
 
             let token: String = rand::thread_rng()
                 .sample_iter(&Alphanumeric)
@@ -125,6 +145,9 @@ impl QrCodeService {
                 }),
 
                 tables: None,
+
+                categories,
+                products,
             }));
         }
 
@@ -132,7 +155,14 @@ impl QrCodeService {
         // MULTI TABLE
         // =========================================
 
-        let table_dtos = tables
+        let available_tables =
+            TableRepository::get_available_tables_by_qr(pool, qr.id).await?;
+
+        if available_tables.is_empty() {
+            return Ok(None);
+        }
+
+        let table_dtos = available_tables
             .into_iter()
             .map(|t| AvailableTableDTO {
                 id: t.id,
@@ -149,6 +179,9 @@ impl QrCodeService {
             table: None,
 
             tables: Some(table_dtos),
+
+            categories,
+            products,
         }))
     }
 
@@ -192,23 +225,22 @@ impl QrCodeService {
 
     pub async fn create_with_tables(
         pool: &PgPool,
+        outlet_id: Uuid,
         dto: CreateQrWithTablesDTO,
     ) -> Result<QrResponseDTO, sqlx::Error> {
 
-        // 🔥 1. generate slug
         let slug: String = rand::thread_rng()
             .sample_iter(&rand::distributions::Alphanumeric)
             .take(12)
             .map(char::from)
             .collect();
 
-        // 🔥 2. create tables dulu
         let mut table_ids = Vec::new();
 
         for table_item in dto.tables {
             let table = TableRepository::create(
                 pool,
-                dto.outlet_id,
+                outlet_id,
                 table_item.name,
                 Some(table_item.location),
             ).await?;
@@ -216,14 +248,12 @@ impl QrCodeService {
             table_ids.push(table.id);
         }
 
-        // 🔥 3. create QR
         let qr = QrCodeRepository::create_qr(
             pool,
-            dto.outlet_id,
+            outlet_id,
             slug.clone(),
         ).await?;
 
-        // 🔥 4. attach ke pivot
         QrCodeRepository::attach_tables(
             pool,
             qr.id,

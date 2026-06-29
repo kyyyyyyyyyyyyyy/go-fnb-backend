@@ -1,7 +1,7 @@
 use actix_web::{HttpRequest, Responder, web};
 use sqlx::PgPool;
 
-use crate::{dto::product_dto::{CreateProductDTO, UpdateProductDTO}, services::product_service, utils::{app_error::AppError, helper}};
+use crate::{dto::product_dto::{CreateProductDTO, UpdateProductAvailableDTO, UpdateProductDTO}, services::product_service, utils::{app_error::AppError, helper}};
 
 
 pub async fn create_product(
@@ -15,12 +15,8 @@ pub async fn create_product(
 
     let price =  body.capital_price + body.tax + body.profit;
 
-    helper::ensure_user_has_outlet(
-        &http_req,
-        &pool,
-        body.outlet_id,
-    )
-    .await?;
+    let outlet_id =
+        helper::get_outlet_id(&http_req)?;
 
     product_service::create_product(
         &pool,
@@ -31,7 +27,7 @@ pub async fn create_product(
         price,
         body.image_url,
         body.category_ids,
-        body.outlet_id,
+        outlet_id,
     )
     .await?;
 
@@ -45,17 +41,10 @@ pub async fn create_product(
 pub async fn get_products_by_outlet(
     pool: web::Data<PgPool>,
     http_req: HttpRequest,
-    path: web::Path<uuid::Uuid>,
 ) -> Result<impl Responder, AppError> {
 
-    let outlet_id = path.into_inner();
-
-    helper::ensure_user_has_outlet(
-        &http_req,
-        &pool,
-        outlet_id,
-    )
-    .await?;
+    let outlet_id =
+        helper::get_outlet_id(&http_req)?;
 
     let products =
         product_service::get_product_by_outlet(
@@ -75,18 +64,13 @@ pub async fn get_products_by_outlet(
 pub async fn get_product_by_id(
     pool: web::Data<PgPool>,
     http_req: HttpRequest,
-    path: web::Path<(uuid::Uuid, uuid::Uuid)>,
+    path: web::Path<uuid::Uuid>,
 ) -> Result<impl Responder, AppError> {
 
-    let (outlet_id, product_id) =
-        path.into_inner();
+    let product_id = path.into_inner();
 
-    helper::ensure_user_has_outlet(
-        &http_req,
-        &pool,
-        outlet_id,
-    )
-    .await?;
+    let _outlet_id =
+        helper::get_outlet_id(&http_req)?;
 
     let product =
         product_service::get_product_by_id(
@@ -106,31 +90,24 @@ pub async fn get_product_by_id(
 pub async fn update_product(
     pool: web::Data<PgPool>,
     http_req: HttpRequest,
-    path: web::Path<(uuid::Uuid, uuid::Uuid)>,
+    path: web::Path<uuid::Uuid>,
     body: web::Json<UpdateProductDTO>,
 ) -> impl Responder {
 
-    let (outlet_id, product_id) =
-        path.into_inner();
+    let product_id = path.into_inner();
 
     let req =
         body.into_inner();
 
-    match helper::ensure_user_has_outlet(
-        &http_req,
-        &pool,
-        outlet_id,
-    )
-    .await
-    {
-        Ok(_) => {}
-
-        Err(e) => {
-            return helper::error_response(
-                &e.to_string()
-            )
-        }
-    }
+    let _outlet_id =
+        match helper::get_outlet_id(&http_req) {
+            Ok(id) => id,
+            Err(e) => {
+                return helper::error_response(
+                    &e.to_string()
+                )
+            }
+        };
 
     // ambil product lama
     let old =
@@ -208,27 +185,49 @@ pub async fn update_product(
     }
 }
 
+pub async fn update_product_available(
+    pool: web::Data<PgPool>,
+    http_req: HttpRequest,
+    path: web::Path<uuid::Uuid>,
+    body: web::Json<UpdateProductAvailableDTO>,
+) -> Result<impl Responder, AppError> {
+
+    let product_id = path.into_inner();
+
+    let _outlet_id =
+        helper::get_outlet_id(&http_req)?;
+
+    product_service::update_product_available(
+        &pool,
+        product_id,
+        body.available,
+    )
+    .await?;
+
+    Ok(
+        helper::success(
+            "product availability updated successfully"
+        )
+    )
+}
+
 pub async fn delete_product(
     pool: web::Data<PgPool>,
     http_req: HttpRequest,
-    path: web::Path<(uuid::Uuid, uuid::Uuid)>,
+    path: web::Path<uuid::Uuid>,
 ) -> impl Responder {
 
-    let (outlet_id, product_id) =
-        path.into_inner();
+    let product_id = path.into_inner();
 
-    match helper::ensure_user_has_outlet(
-        &http_req,
-        &pool,
-        outlet_id,
-    ).await {
-        Ok(_) => {}
-        Err(e) => {
-            return helper::error_response(
-                &e.to_string()
-            )
-        }
-    }
+    let _outlet_id =
+        match helper::get_outlet_id(&http_req) {
+            Ok(id) => id,
+            Err(e) => {
+                return helper::error_response(
+                    &e.to_string()
+                )
+            }
+        };
 
     let result =
         product_service::delete_product(

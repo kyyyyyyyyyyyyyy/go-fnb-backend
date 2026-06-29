@@ -1,4 +1,4 @@
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use sqlx::PgPool;
 use tracing::error;
 use uuid::Uuid;
@@ -10,10 +10,16 @@ use crate::utils::helper;
 
 pub async fn create_qr_with_tables(
     pool: web::Data<PgPool>,
+    http_req: HttpRequest,
     payload: web::Json<CreateQrWithTablesDTO>,
 ) -> impl Responder {
 
-    match QrCodeService::create_with_tables(&pool, payload.into_inner()).await {
+    let outlet_id = match helper::get_outlet_id(&http_req) {
+        Ok(id) => id,
+        Err(e) => return helper::error_response(&e.to_string()),
+    };
+
+    match QrCodeService::create_with_tables(&pool, outlet_id, payload.into_inner()).await {
         Ok(result) => HttpResponse::Ok().json(result),
         Err(err) => {
             eprintln!("CREATE QR WITH TABLES ERROR: {:?}", err);
@@ -22,17 +28,20 @@ pub async fn create_qr_with_tables(
     }
 }
 
-//
-// 🔥 CREATE QR
-//
 pub async fn create_qr(
     pool: web::Data<PgPool>,
+    http_req: HttpRequest,
     payload: web::Json<CreateQrDTO>,
 ) -> impl Responder {
 
+    let outlet_id = match helper::get_outlet_id(&http_req) {
+        Ok(id) => id,
+        Err(e) => return helper::error_response(&e.to_string()),
+    };
+
     let dto = payload.into_inner();
 
-    match QrCodeService::create(&pool, &dto).await {
+    match QrCodeService::create(&pool, outlet_id, &dto).await {
         Ok(result) => {
             helper::success_withDatas("qr created successfully", result)
         }
@@ -42,15 +51,12 @@ pub async fn create_qr(
                 error = ?err,
                 payload = ?dto,
             );
-            
+
             helper::error_response("Failed to create QR")
         }
     }
 }
 
-//
-// 🔍 SCAN QR
-//
 pub async fn scan_qr(
     pool: web::Data<PgPool>,
     path: web::Path<String>,
@@ -72,7 +78,7 @@ pub async fn scan_qr(
                 slug = %slug,
             );
 
-            helper::error_response("Failed to scan QR")
+            helper::error_response(&err.to_string())
         }
     }
 }
@@ -107,11 +113,16 @@ pub async fn select_table(
     }
 }
 
-// 🔍 Get tables by QR ID
 pub async fn get_qr_tables(
     pool: web::Data<PgPool>,
+    http_req: HttpRequest,
     path: web::Path<Uuid>,
 ) -> impl Responder {
+
+    let _outlet_id = match helper::get_outlet_id(&http_req) {
+        Ok(id) => id,
+        Err(e) => return helper::error_response(&e.to_string()),
+    };
 
     let qr_id = path.into_inner();
 
@@ -131,14 +142,15 @@ pub async fn get_qr_tables(
     }
 }
 
-
-// 🔍 Get all QR by outlet
 pub async fn get_qr_by_outlet(
     pool: web::Data<PgPool>,
-    path: web::Path<Uuid>,
+    http_req: HttpRequest,
 ) -> impl Responder {
 
-    let outlet_id = path.into_inner();
+    let outlet_id = match helper::get_outlet_id(&http_req) {
+        Ok(id) => id,
+        Err(e) => return helper::error_response(&e.to_string()),
+    };
 
     match QrCodeService::get_by_outlet(&pool, outlet_id).await {
         Ok(result) => {
@@ -156,12 +168,16 @@ pub async fn get_qr_by_outlet(
     }
 }
 
-
-// 🔄 Regenerate slug
 pub async fn regenerate_qr_slug(
     pool: web::Data<PgPool>,
+    http_req: HttpRequest,
     path: web::Path<Uuid>,
 ) -> impl Responder {
+
+    let _outlet_id = match helper::get_outlet_id(&http_req) {
+        Ok(id) => id,
+        Err(e) => return helper::error_response(&e.to_string()),
+    };
 
     let qr_id = path.into_inner();
 

@@ -54,7 +54,7 @@ impl OrderRepository {
                 )
                 VALUES
                 (
-                    $1,$2,$3,$4,
+                    $1,$2,$3::order_status,$4,
                     $5,$6,$7,$8,
                     $9,$10,$11
                 )
@@ -135,7 +135,10 @@ impl OrderRepository {
 
         sqlx::query_as(
             r#"
-            SELECT *
+            SELECT
+                id, order_name, order_type, status::TEXT AS status, order_number,
+                capital_price, tax, profit, total, notes, table_id, outlet_id,
+                created_at, updated_at, change_by
             FROM orders
             WHERE id = $1
             "#
@@ -169,7 +172,10 @@ impl OrderRepository {
 
         sqlx::query_as(
             r#"
-            SELECT *
+            SELECT
+                id, order_name, order_type, status::TEXT AS status, order_number,
+                capital_price, tax, profit, total, notes, table_id, outlet_id,
+                created_at, updated_at, change_by
             FROM orders
             WHERE outlet_id = $1
             ORDER BY created_at DESC
@@ -191,7 +197,7 @@ impl OrderRepository {
                 r#"
                 UPDATE orders
                 SET
-                    status = $1,
+                    status = $1::order_status,
                     updated_at = NOW()
 
                 WHERE id = $2
@@ -205,16 +211,21 @@ impl OrderRepository {
         Ok(result.rows_affected() > 0)
     }
 
-    pub async fn update_order(
+    pub async fn update_order_with_items(
         pool: &PgPool,
         order_id: Uuid,
-
         order_name: Option<String>,
         order_type: Option<String>,
         table_id: Option<Uuid>,
         notes: Option<String>,
         change_by: Uuid,
+        update_items: &[(Uuid, i32, i64)],
+        add_items: &[OrderItems],
+        remove_item_ids: &[Uuid],
     ) -> Result<bool, sqlx::Error> {
+
+        let mut tx: Transaction<'_, Postgres> =
+            pool.begin().await?;
 
         let result =
             sqlx::query(
@@ -236,10 +247,102 @@ impl OrderRepository {
             .bind(notes)
             .bind(change_by)
             .bind(order_id)
-            .execute(pool)
+            .execute(&mut *tx)
             .await?;
 
-        Ok(result.rows_affected() > 0)
+        if result.rows_affected() == 0 {
+            tx.rollback().await?;
+            return Ok(false);
+        }
+
+        for (item_id, qty, sub_total) in update_items {
+            sqlx::query(
+                r#"
+                UPDATE order_items
+                SET qty = $1, sub_total = $2
+                WHERE id = $3 AND order_id = $4
+                "#
+            )
+            .bind(qty)
+            .bind(sub_total)
+            .bind(item_id)
+            .bind(order_id)
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        for item in add_items {
+            sqlx::query(
+                r#"
+                INSERT INTO order_items
+                (order_id, product_id, qty, sub_total, capital_price, profit, tax, discount, notes)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                "#
+            )
+            .bind(order_id)
+            .bind(item.product_id)
+            .bind(item.qty)
+            .bind(item.sub_total)
+            .bind(item.capital_price)
+            .bind(item.profit)
+            .bind(item.tax)
+            .bind(item.discount)
+            .bind(item.notes.clone())
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        if !remove_item_ids.is_empty() {
+            sqlx::query(
+                r#"
+                DELETE FROM order_items
+                WHERE id = ANY($1) AND order_id = $2
+                "#
+            )
+            .bind(remove_item_ids)
+            .bind(order_id)
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        let totals: (i64, i64, i64, i64) =
+            sqlx::query_as(
+                r#"
+                SELECT
+                    COALESCE(SUM(capital_price * qty)::BIGINT, 0),
+                    COALESCE(SUM(tax * qty)::BIGINT, 0),
+                    COALESCE(SUM(profit * qty)::BIGINT, 0),
+                    COALESCE(SUM(sub_total)::BIGINT, 0)
+                FROM order_items
+                WHERE order_id = $1
+                "#
+            )
+            .bind(order_id)
+            .fetch_one(&mut *tx)
+            .await?;
+
+        sqlx::query(
+            r#"
+            UPDATE orders
+            SET
+                capital_price = $1,
+                tax = $2,
+                profit = $3,
+                total = $4
+            WHERE id = $5
+            "#
+        )
+        .bind(totals.0)
+        .bind(totals.1)
+        .bind(totals.2)
+        .bind(totals.3)
+        .bind(order_id)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(true)
     }
 
     pub async fn delete_order(

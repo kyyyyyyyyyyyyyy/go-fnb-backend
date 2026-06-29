@@ -3,7 +3,7 @@ use sqlx::PgPool;
 
 use crate::models::outlet_model::Outlet;
 use crate::repositories::outlet_repo::OutletRepository;
-use crate::dto::outlet_dto::UpdateOutletDTO;
+use crate::dto::outlet_dto::{UpdateOutletDTO, OutletWithTodayStats};
 use crate::utils::app_error::AppError;
 
 pub struct OutletService;
@@ -90,9 +90,9 @@ impl OutletService {
     pub async fn get_my_outlets(
         pool: &PgPool,
         user_id: Uuid,
-    ) -> Result<Vec<Outlet>, AppError> {
+    ) -> Result<Vec<OutletWithTodayStats>, AppError> {
 
-        let outlets = OutletRepository::find_by_owner(
+        let outlets = OutletRepository::find_by_owner_with_today_stats(
             pool,
             user_id,
         )

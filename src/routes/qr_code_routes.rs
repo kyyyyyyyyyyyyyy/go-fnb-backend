@@ -12,8 +12,8 @@ pub fn init(cfg: &mut web::ServiceConfig) {
             // 🔐 protected routes
             .wrap(auth.clone())
             .route("", web::post().to(qr_code_controller::create_qr))
+            .route("", web::get().to(qr_code_controller::get_qr_by_outlet))
             .route("/auto", web::post().to(qr_code_controller::create_qr_with_tables))
-            .route("/outlet/{outlet_id}", web::get().to(qr_code_controller::get_qr_by_outlet))
             .route("/{qr_id}/tables", web::get().to(qr_code_controller::get_qr_tables))
             .route("/{qr_id}/regenerate", web::patch().to(qr_code_controller::regenerate_qr_slug))
     );

@@ -10,12 +10,13 @@ impl TableService {
 
     pub async fn create(
         pool: &PgPool,
+        outlet_id: Uuid,
         dto: CreateTableDTO,
     ) -> Result<TableResponseDTO, sqlx::Error> {
 
         let table = TableRepository::create(
             pool,
-            dto.outlet_id,
+            outlet_id,
             dto.name,
             dto.location,
         ).await?;

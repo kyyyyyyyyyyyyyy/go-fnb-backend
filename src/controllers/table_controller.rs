@@ -1,18 +1,24 @@
-use actix_web::{web, Responder};
+use actix_web::{web, HttpRequest, Responder};
 use sqlx::PgPool;
 use uuid::Uuid;
 use tracing::error;
 
 use crate::services::table_service::TableService;
 use crate::dto::table_dto::{CreateTableDTO, UpdateTableDTO};
-use crate::utils::helper::{error_response, not_found, success, success_withDatas};
+use crate::utils::helper::{error_response, get_outlet_id, not_found, success, success_withDatas};
 
 pub async fn create_table(
     pool: web::Data<PgPool>,
+    http_req: HttpRequest,
     payload: web::Json<CreateTableDTO>,
 ) -> impl Responder {
 
-    match TableService::create(&pool, payload.into_inner()).await {
+    let outlet_id = match get_outlet_id(&http_req) {
+        Ok(id) => id,
+        Err(e) => return error_response(&e.to_string()),
+    };
+
+    match TableService::create(&pool, outlet_id, payload.into_inner()).await {
         Ok(result) => success_withDatas("Table created successfully", result),
         Err(err) => error_response(&err.to_string()),
     }
@@ -20,8 +26,14 @@ pub async fn create_table(
 
 pub async fn get_table_by_id(
     pool: web::Data<PgPool>,
+    http_req: HttpRequest,
     path: web::Path<Uuid>,
 ) -> impl Responder {
+
+    let _outlet_id = match get_outlet_id(&http_req) {
+        Ok(id) => id,
+        Err(e) => return error_response(&e.to_string()),
+    };
 
     let table_id = path.into_inner();
 
@@ -43,10 +55,13 @@ pub async fn get_table_by_id(
 
 pub async fn get_tables_by_outlet(
     pool: web::Data<PgPool>,
-    path: web::Path<Uuid>,
+    http_req: HttpRequest,
 ) -> impl Responder {
 
-    let outlet_id = path.into_inner();
+    let outlet_id = match get_outlet_id(&http_req) {
+        Ok(id) => id,
+        Err(e) => return error_response(&e.to_string()),
+    };
 
     match TableService::get_by_outlet_id(&pool, outlet_id).await {
         Ok(result) => {
@@ -66,9 +81,15 @@ pub async fn get_tables_by_outlet(
 
 pub async fn update_table(
     pool: web::Data<PgPool>,
+    http_req: HttpRequest,
     path: web::Path<Uuid>,
     payload: web::Json<UpdateTableDTO>,
 ) -> impl Responder {
+
+    let _outlet_id = match get_outlet_id(&http_req) {
+        Ok(id) => id,
+        Err(e) => return error_response(&e.to_string()),
+    };
 
     let table_id = path.into_inner();
     let dto = payload.into_inner();
@@ -89,11 +110,16 @@ pub async fn update_table(
     }
 }
 
-
 pub async fn delete_table(
     pool: web::Data<PgPool>,
+    http_req: HttpRequest,
     path: web::Path<Uuid>,
 ) -> impl Responder {
+
+    let _outlet_id = match get_outlet_id(&http_req) {
+        Ok(id) => id,
+        Err(e) => return error_response(&e.to_string()),
+    };
 
     let table_id = path.into_inner();
 
@@ -118,8 +144,14 @@ pub async fn delete_table(
 
 pub async fn delete_token(
     pool: web::Data<PgPool>,
+    http_req: HttpRequest,
     path: web::Path<Uuid>,
 ) -> impl Responder {
+
+    let _outlet_id = match get_outlet_id(&http_req) {
+        Ok(id) => id,
+        Err(e) => return error_response(&e.to_string()),
+    };
 
     let table_id = path.into_inner();
 

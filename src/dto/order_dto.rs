@@ -22,7 +22,25 @@ pub struct UpdateOrder {
     pub order_name: Option<String>,
     pub order_type: Option<String>,
     pub table_id: Option<Uuid>,
-    pub notes: Option<String>
+    pub notes: Option<String>,
+    pub update_items: Option<Vec<UpdateOrderItem>>,
+    pub add_items: Option<Vec<AddOrderItem>>,
+    pub remove_item_ids: Option<Vec<Uuid>>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UpdateOrderItem {
+    pub id: Uuid,
+    pub qty: i32,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AddOrderItem {
+    pub product_id: Uuid,
+    pub qty: i32,
+    pub notes: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

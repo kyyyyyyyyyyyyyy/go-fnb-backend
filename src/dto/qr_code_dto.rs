@@ -3,8 +3,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateQrDTO {
-    pub outlet_id: Uuid,
-    pub table_ids: Vec<Uuid>, // 🔥 support multi table
+    pub table_ids: Vec<Uuid>,
 }
 
 #[derive(Debug, Serialize)]
@@ -16,10 +15,8 @@ pub struct QrResponseDTO {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateQrWithTablesDTO {
-    pub outlet_id: Uuid,
-
-    // 🔥 list nama meja (fleksibel)
-    pub tables: Vec<CreateTableItemDTO>,}
+    pub tables: Vec<CreateTableItemDTO>,
+}
 
 #[derive(Debug, Deserialize)]
 pub struct CreateTableItemDTO {

@@ -3,7 +3,6 @@ use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateTableDTO {
-    pub outlet_id: Uuid,
     pub name: String,
     pub location: Option<String>,
 }

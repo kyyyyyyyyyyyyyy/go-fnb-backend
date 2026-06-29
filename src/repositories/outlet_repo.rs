@@ -2,7 +2,7 @@ use sqlx::{PgPool, Row, QueryBuilder};
 use uuid::Uuid;
 
 use crate::models::outlet_model::Outlet;
-use crate::dto::outlet_dto::UpdateOutletDTO;
+use crate::dto::outlet_dto::{UpdateOutletDTO, OutletWithTodayStats};
 
 pub struct OutletRepository;
 
@@ -176,6 +176,36 @@ impl OutletRepository {
         .await?;
 
         Ok(rows.into_iter().map(Self::map_outlet).collect())
+    }
+
+    // FIND BY OWNER WITH TODAY STATS
+    pub async fn find_by_owner_with_today_stats(
+        pool: &PgPool,
+        owner_id: Uuid,
+    ) -> Result<Vec<OutletWithTodayStats>, sqlx::Error> {
+
+        let rows = sqlx::query(
+            r#"
+            SELECT
+                o.id, o.name, o.owner_id,
+                a.address_line, a.city, a.province,
+                a.postal_code, a.latitude, a.longitude,
+                COALESCE(SUM(ord.total) FILTER (WHERE ord.created_at >= CURRENT_DATE), 0)::BIGINT AS today_revenue,
+                COALESCE(COUNT(ord.id) FILTER (WHERE ord.created_at >= CURRENT_DATE), 0)::BIGINT AS today_orders
+            FROM outlets o
+            JOIN addresses a ON a.id = o.address_id
+            LEFT JOIN orders ord ON ord.outlet_id = o.id
+            WHERE o.owner_id = $1
+            GROUP BY o.id, o.name, o.owner_id, a.address_line, a.city, a.province,
+                     a.postal_code, a.latitude, a.longitude
+            ORDER BY o.created_at DESC
+            "#
+        )
+        .bind(owner_id)
+        .fetch_all(pool)
+        .await?;
+
+        Ok(rows.into_iter().map(Self::map_outlet_with_stats).collect())
     }
 
     // UPDATE OUTLET
@@ -366,6 +396,23 @@ impl OutletRepository {
         .await?;
 
         Ok(result.is_some())
+    }
+
+    fn map_outlet_with_stats(r: sqlx::postgres::PgRow) -> OutletWithTodayStats {
+
+        OutletWithTodayStats {
+            id: r.get("id"),
+            name: r.get("name"),
+            owner_id: r.get("owner_id"),
+            address_line: r.get("address_line"),
+            city: r.get("city"),
+            province: r.get("province"),
+            postal_code: r.try_get("postal_code").ok(),
+            latitude: r.try_get("latitude").ok(),
+            longitude: r.try_get("longitude").ok(),
+            today_revenue: r.get("today_revenue"),
+            today_orders: r.get("today_orders"),
+        }
     }
 
     // MAPPER

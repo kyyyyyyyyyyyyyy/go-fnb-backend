@@ -131,6 +131,32 @@ use crate::{dto::product_dto::ProductResponseDTO, repositories::product_repo::Pr
         Ok(())
     }
 
+    pub async fn update_product_available(
+        pool: &PgPool,
+        product_id: Uuid,
+        available: bool,
+    ) -> Result<(), AppError> {
+
+        let updated =
+            ProductRepository::update_product_available(
+                pool,
+                product_id,
+                available,
+            )
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        if !updated {
+            return Err(
+                AppError::NotFound(
+                    "Product tidak ditemukan".to_string()
+                )
+            );
+        }
+
+        Ok(())
+    }
+
     pub async fn delete_product(
         pool: &PgPool,
         product_id: Uuid,

@@ -14,6 +14,7 @@ struct ProductRow {
     profit: i64,
     price: i64,
     image_url: String,
+    available: bool,
 
     category_id: Option<Uuid>,
     category_name: Option<String>,
@@ -109,6 +110,7 @@ impl ProductRepository {
                 p.profit,
                 p.price,
                 p.image_url,
+                p.available,
 
                 c.id AS category_id,
                 c.name AS category_name
@@ -144,6 +146,7 @@ impl ProductRepository {
                             profit: row.profit,
                             price: row.price,
                             image_url: row.image_url,
+                            available: row.available,
                             categories: vec![],
                         }
                     );
@@ -179,6 +182,7 @@ impl ProductRepository {
                     p.profit,
                     p.price,
                     p.image_url,
+                    p.available,
 
                     c.id AS category_id,
                     c.name AS category_name
@@ -217,6 +221,7 @@ impl ProductRepository {
                             profit: row.profit,
                             price: row.price,
                             image_url: row.image_url,
+                            available: row.available,
                             categories: vec![],
                         }
                     );
@@ -327,6 +332,26 @@ impl ProductRepository {
         tx.commit().await?;
 
         Ok(true)
+    }
+
+    pub async fn update_product_available(
+        pool: &PgPool,
+        product_id: Uuid,
+        available: bool,
+    ) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            UPDATE products
+            SET available = $1
+            WHERE id = $2
+            "#
+        )
+        .bind(available)
+        .bind(product_id)
+        .execute(pool)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
     }
 
     pub async fn delete_product(

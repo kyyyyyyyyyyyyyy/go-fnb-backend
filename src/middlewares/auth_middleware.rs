@@ -7,6 +7,7 @@ use crate::utils::jwt;
 #[derive(Clone, Copy)]
 pub struct AuthUser {
     pub user_id: Uuid,
+    pub outlet_id: Option<Uuid>,
 }
 
 pub async fn validator(
@@ -19,7 +20,12 @@ pub async fn validator(
         Some(claims) => {
             match Uuid::parse_str(&claims.sub) {
                 Ok(user_id) => {
-                    req.extensions_mut().insert(AuthUser { user_id });
+                    let outlet_id = claims
+                        .outlet_id
+                        .as_deref()
+                        .and_then(|s| Uuid::parse_str(s).ok());
+
+                    req.extensions_mut().insert(AuthUser { user_id, outlet_id });
                     Ok(req)
                 }
                 Err(_) => Err((
